@@ -14,7 +14,9 @@ const sampleProducts = [
     currentStock: 25,
     minStock: 5,
     location: "Gudang A-1",
-    lastUpdated: "2024-01-15 14:30"
+    lastUpdated: "2024-01-15 14:30",
+    price: 15000000,
+    barcode: "1234567890123"
   },
   {
     id: "PRD002", 
@@ -23,7 +25,9 @@ const sampleProducts = [
     currentStock: 3,
     minStock: 10,
     location: "Gudang A-2",
-    lastUpdated: "2024-01-15 10:15"
+    lastUpdated: "2024-01-15 10:15",
+    price: 250000,
+    barcode: "2234567890123"
   },
   {
     id: "PRD003",
@@ -32,7 +36,9 @@ const sampleProducts = [
     currentStock: 0,
     minStock: 20,
     location: "Gudang B-1",
-    lastUpdated: "2024-01-14 16:45"
+    lastUpdated: "2024-01-14 16:45",
+    price: 85000,
+    barcode: "3234567890123"
   },
   {
     id: "PRD004",
@@ -41,7 +47,9 @@ const sampleProducts = [
     currentStock: 45,
     minStock: 15,
     location: "Gudang C-1",
-    lastUpdated: "2024-01-15 09:20"
+    lastUpdated: "2024-01-15 09:20",
+    price: 150000,
+    barcode: "4234567890123"
   },
   {
     id: "PRD005",
@@ -50,7 +58,9 @@ const sampleProducts = [
     currentStock: 8,
     minStock: 50,
     location: "Gudang D-1",
-    lastUpdated: "2024-01-15 13:10"
+    lastUpdated: "2024-01-15 13:10",
+    price: 5000,
+    barcode: "5234567890123"
   },
   {
     id: "PRD006",
@@ -59,7 +69,9 @@ const sampleProducts = [
     currentStock: 12,
     minStock: 3,
     location: "Gudang E-1",
-    lastUpdated: "2024-01-15 11:30"
+    lastUpdated: "2024-01-15 11:30",
+    price: 1200000,
+    barcode: "6234567890123"
   }
 ];
 
