@@ -44,7 +44,27 @@ All colors MUST be HSL.
     --danger: 0 84.2% 60.2%;
     --danger-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(214 84% 56%) 0%, hsl(142 76% 36%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(214 84% 56% / 0.9) 0%, hsl(142 76% 36% / 0.8) 50%, hsl(43 96% 56% / 0.7) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 76% 46%) 100%);
+    --gradient-warning: linear-gradient(135deg, hsl(43 96% 56%) 0%, hsl(43 96% 66%) 100%);
+    --gradient-danger: linear-gradient(135deg, hsl(0 84.2% 60.2%) 0%, hsl(0 84.2% 70.2%) 100%);
+
+    /* Shadows */
+    --shadow-soft: 0 4px 20px -4px hsl(214 84% 56% / 0.15);
+    --shadow-medium: 0 8px 30px -8px hsl(214 84% 56% / 0.2);
+    --shadow-strong: 0 20px 40px -12px hsl(214 84% 56% / 0.25);
+    --shadow-success: 0 4px 20px -4px hsl(142 76% 36% / 0.3);
+    --shadow-warning: 0 4px 20px -4px hsl(43 96% 56% / 0.3);
+    --shadow-danger: 0 4px 20px -4px hsl(0 84.2% 60.2% / 0.3);
+
+    /* Animations */
+    --animate-duration: 0.3s;
+    --animate-ease: cubic-bezier(0.4, 0, 0.2, 1);
 
     --sidebar-background: 0 0% 98%;
 

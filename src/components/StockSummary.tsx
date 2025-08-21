@@ -46,15 +46,28 @@ export const StockSummary = ({
       {summaryCards.map((card, index) => {
         const IconComponent = card.icon;
         return (
-          <Card key={index} className={`${card.className} hover:shadow-md transition-shadow`}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+          <Card key={index} 
+            className={`${card.className} group relative overflow-hidden bg-gradient-card border-0 shadow-medium hover:shadow-strong transition-all duration-500 hover:scale-105 animate-scale-in cursor-pointer`}
+            style={{ animationDelay: `${index * 0.1}s` }}
+          >
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
+            
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
+              <CardTitle className="text-sm font-bold text-muted-foreground group-hover:text-primary transition-colors duration-300">
                 {card.title}
               </CardTitle>
-              <IconComponent className="h-4 w-4 text-muted-foreground" />
+              <div className="p-2 rounded-lg bg-muted/50 group-hover:bg-primary/10 transition-all duration-300 group-hover:scale-110">
+                <IconComponent className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{card.value}</div>
+            <CardContent className="relative z-10">
+              <div className="text-3xl font-bold text-foreground group-hover:text-primary transition-colors duration-300 animate-float">
+                {card.value}
+              </div>
+              <div className="mt-2 h-1 w-full bg-muted/30 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-primary transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-700 ease-out" />
+              </div>
             </CardContent>
           </Card>
         );
