@@ -14,7 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      products: {
+        Row: {
+          barcode: string | null
+          category: string
+          created_at: string
+          current_stock: number
+          id: string
+          location: string | null
+          min_stock: number
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          barcode?: string | null
+          category: string
+          created_at?: string
+          current_stock?: number
+          id?: string
+          location?: string | null
+          min_stock?: number
+          name: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          barcode?: string | null
+          category?: string
+          created_at?: string
+          current_stock?: number
+          id?: string
+          location?: string | null
+          min_stock?: number
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          cash_received: number | null
+          cashier_name: string
+          change: number | null
+          created_at: string
+          grand_total: number
+          id: string
+          items: Json
+          payment_method: string
+          receipt_number: string
+          tax: number
+          total: number
+        }
+        Insert: {
+          cash_received?: number | null
+          cashier_name: string
+          change?: number | null
+          created_at?: string
+          grand_total: number
+          id?: string
+          items: Json
+          payment_method: string
+          receipt_number: string
+          tax: number
+          total: number
+        }
+        Update: {
+          cash_received?: number | null
+          cashier_name?: string
+          change?: number | null
+          created_at?: string
+          grand_total?: number
+          id?: string
+          items?: Json
+          payment_method?: string
+          receipt_number?: string
+          tax?: number
+          total?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

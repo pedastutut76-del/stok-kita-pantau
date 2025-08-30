@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Package, ShoppingCart, BarChart3, Receipt } from "lucide-react";
+import { Package, ShoppingCart, BarChart3, Receipt, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Navigation = () => {
@@ -20,6 +20,11 @@ export const Navigation = () => {
       path: "/laporan",
       label: "Laporan",
       icon: BarChart3,
+    },
+    {
+      path: "/admin",
+      label: "Admin",
+      icon: Settings,
     }
   ];
 

@@ -1,170 +1,99 @@
-import { useState, useEffect } from "react";
-import { Product, CartItem, Transaction } from "@/types/sales";
+import { useState } from "react";
 import { ProductSelector } from "@/components/ProductSelector";
-import { Cart } from "@/components/Cart";
+import { Cart } from "@/components/Cart";  
 import { CheckoutDialog } from "@/components/CheckoutDialog";
 import { Receipt } from "@/components/Receipt";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useProducts, Product } from "@/hooks/useProducts";
+import { useTransactions, TransactionItem } from "@/hooks/useTransactions";
 import { useToast } from "@/hooks/use-toast";
+import { Package } from "lucide-react";
 
-// Extended sample products with prices
-const sampleProducts: Product[] = [
-  {
-    id: "PRD001",
-    name: "Laptop Dell XPS 13",
-    category: "elektronik",
-    currentStock: 25,
-    minStock: 5,
-    location: "Gudang A-1",
-    lastUpdated: "2024-01-15 14:30",
-    price: 15000000,
-    barcode: "1234567890123"
-  },
-  {
-    id: "PRD002", 
-    name: "Mouse Wireless Logitech",
-    category: "elektronik",
-    currentStock: 3,
-    minStock: 10,
-    location: "Gudang A-2",
-    lastUpdated: "2024-01-15 10:15",
-    price: 250000,
-    barcode: "2234567890123"
-  },
-  {
-    id: "PRD003",
-    name: "Kopi Arabica Premium",
-    category: "makanan",
-    currentStock: 0,
-    minStock: 20,
-    location: "Gudang B-1",
-    lastUpdated: "2024-01-14 16:45",
-    price: 85000,
-    barcode: "3234567890123"
-  },
-  {
-    id: "PRD004",
-    name: "Kemeja Formal Putih",
-    category: "pakaian",
-    currentStock: 45,
-    minStock: 15,
-    location: "Gudang C-1",
-    lastUpdated: "2024-01-15 09:20",
-    price: 150000,
-    barcode: "4234567890123"
-  },
-  {
-    id: "PRD005",
-    name: "Pulpen Pilot Hitam",
-    category: "alat-tulis",
-    currentStock: 8,
-    minStock: 50,
-    location: "Gudang D-1",
-    lastUpdated: "2024-01-15 13:10",
-    price: 5000,
-    barcode: "5234567890123"
-  },
-  {
-    id: "PRD006",
-    name: "Meja Kantor Kayu",
-    category: "furniture",
-    currentStock: 12,
-    minStock: 3,
-    location: "Gudang E-1",
-    lastUpdated: "2024-01-15 11:30",
-    price: 1200000,
-    barcode: "6234567890123"
-  }
-];
+interface CartItem {
+  product: Product;
+  quantity: number;
+  subtotal: number;
+}
 
 const Cashier = () => {
+  const { products, updateStock, loading } = useProducts();
+  const { addTransaction, generateReceiptNumber } = useTransactions();
+  const { toast } = useToast();
+  
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
-  const [products, setProducts] = useState<Product[]>(sampleProducts);
-  const { toast } = useToast();
-
-  // Load transactions from localStorage on component mount
-  useEffect(() => {
-    const savedTransactions = localStorage.getItem('transactions');
-    if (savedTransactions) {
-      // You can use this for transaction history
-    }
-  }, []);
+  const [lastTransaction, setLastTransaction] = useState<any>(null);
 
   const addToCart = (product: Product, quantity: number) => {
-    setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.product.id === product.id);
-      
-      if (existingItem) {
-        const newQuantity = existingItem.quantity + quantity;
-        if (newQuantity > product.currentStock) {
-          toast({
-            title: "Stok Tidak Mencukupi",
-            description: `Stok tersedia: ${product.currentStock}`,
-            variant: "destructive",
-          });
-          return prevCart;
-        }
-        
-        return prevCart.map(item =>
-          item.product.id === product.id
-            ? { ...item, quantity: newQuantity, subtotal: newQuantity * product.price }
-            : item
-        );
-      } else {
-        if (quantity > product.currentStock) {
-          toast({
-            title: "Stok Tidak Mencukupi",
-            description: `Stok tersedia: ${product.currentStock}`,
-            variant: "destructive",
-          });
-          return prevCart;
-        }
-        
-        return [...prevCart, {
-          product,
-          quantity,
-          subtotal: quantity * product.price
-        }];
-      }
-    });
+    // Check if product has enough stock
+    if (product.current_stock < quantity) {
+      toast({
+        title: "Stok tidak cukup",
+        description: `Stok tersedia: ${product.current_stock}`,
+        variant: "destructive",
+      });
+      return;
+    }
 
-    toast({
-      title: "Produk Ditambahkan",
-      description: `${product.name} ditambahkan ke keranjang`,
-    });
+    const existingItem = cart.find(item => item.product.id === product.id);
+    
+    if (existingItem) {
+      const newQuantity = existingItem.quantity + quantity;
+      if (product.current_stock < newQuantity) {
+        toast({
+          title: "Stok tidak cukup",
+          description: `Maksimal bisa ditambahkan: ${product.current_stock - existingItem.quantity}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      updateQuantity(product.id, newQuantity);
+    } else {
+      const newItem: CartItem = {
+        product,
+        quantity,
+        subtotal: product.price * quantity
+      };
+      setCart(prev => [...prev, newItem]);
+      
+      toast({
+        title: "Produk ditambahkan",
+        description: `${product.name} ditambahkan ke keranjang`,
+      });
+    }
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
-    if (quantity === 0) {
+    if (quantity <= 0) {
       removeFromCart(productId);
       return;
     }
 
-    setCart(prevCart =>
-      prevCart.map(item => {
-        if (item.product.id === productId) {
-          if (quantity > item.product.currentStock) {
-            toast({
-              title: "Stok Tidak Mencukupi",
-              description: `Stok tersedia: ${item.product.currentStock}`,
-              variant: "destructive",
-            });
-            return item;
-          }
-          return { ...item, quantity, subtotal: quantity * item.product.price };
-        }
-        return item;
-      })
-    );
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    if (product.current_stock < quantity) {
+      toast({
+        title: "Stok tidak cukup",
+        description: `Stok tersedia: ${product.current_stock}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCart(prev => prev.map(item => 
+      item.product.id === productId 
+        ? { ...item, quantity, subtotal: item.product.price * quantity }
+        : item
+    ));
   };
 
   const removeFromCart = (productId: string) => {
-    setCart(prevCart => prevCart.filter(item => item.product.id !== productId));
+    setCart(prev => prev.filter(item => item.product.id !== productId));
     toast({
-      title: "Produk Dihapus",
+      title: "Produk dihapus",
       description: "Produk telah dihapus dari keranjang",
     });
   };
@@ -172,7 +101,7 @@ const Cashier = () => {
   const handleCheckout = () => {
     if (cart.length === 0) {
       toast({
-        title: "Keranjang Kosong",
+        title: "Keranjang kosong",
         description: "Tambahkan produk ke keranjang terlebih dahulu",
         variant: "destructive",
       });
@@ -181,31 +110,85 @@ const Cashier = () => {
     setIsCheckoutOpen(true);
   };
 
-  const handleTransactionComplete = (transaction: Transaction) => {
-    // Update product stock
-    setProducts(prevProducts =>
-      prevProducts.map(product => {
-        const cartItem = transaction.items.find(item => item.product.id === product.id);
-        if (cartItem) {
-          return {
-            ...product,
-            currentStock: product.currentStock - cartItem.quantity
-          };
-        }
-        return product;
-      })
-    );
+  const handleTransactionComplete = async (transactionData: any) => {
+    try {
+      // Create transaction items for database
+      const transactionItems: TransactionItem[] = cart.map(item => ({
+        product_id: item.product.id,
+        product_name: item.product.name,
+        quantity: item.quantity,
+        price: item.product.price,
+        subtotal: item.subtotal
+      }));
 
-    // Save transaction to localStorage
-    const savedTransactions = JSON.parse(localStorage.getItem('transactions') || '[]');
-    const updatedTransactions = [...savedTransactions, transaction];
-    localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
+      // Create transaction object
+      const transaction = {
+        receipt_number: generateReceiptNumber(),
+        items: transactionItems,
+        total: transactionData.subtotal,
+        tax: transactionData.tax,
+        grand_total: transactionData.grandTotal,
+        payment_method: transactionData.paymentMethod,
+        cash_received: transactionData.cashReceived,
+        change: transactionData.change,
+        cashier_name: transactionData.customerName || "Kasir",
+      };
 
-    // Clear cart and show receipt
-    setCart([]);
-    setLastTransaction(transaction);
-    setIsReceiptOpen(true);
+      // Save transaction to database
+      const result = await addTransaction(transaction);
+      if (!result.success) {
+        throw new Error("Gagal menyimpan transaksi");
+      }
+
+      // Update stock for each product
+      for (const item of cart) {
+        const newStock = item.product.current_stock - item.quantity;
+        await updateStock(item.product.id, newStock);
+      }
+
+      // Set up receipt data
+      const receiptData = {
+        id: result.data.id,
+        items: cart,
+        total: transactionData.subtotal,
+        tax: transactionData.tax,
+        grandTotal: transactionData.grandTotal,
+        paymentMethod: transactionData.paymentMethod,
+        cashReceived: transactionData.cashReceived,
+        change: transactionData.change,
+        timestamp: new Date().toISOString(),
+        cashierName: transactionData.customerName || "Kasir",
+        receiptNumber: transaction.receipt_number,
+      };
+
+      setLastTransaction(receiptData);
+      setCart([]);
+      setIsCheckoutOpen(false);
+      setIsReceiptOpen(true);
+
+      toast({
+        title: "Transaksi berhasil",
+        description: `Struk ${transaction.receipt_number} telah dibuat`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Gagal memproses transaksi",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto p-4 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Package className="mx-auto h-12 w-12 text-muted-foreground animate-pulse" />
+          <p className="mt-2 text-muted-foreground">Memuat produk...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4 space-y-6">
@@ -251,7 +234,52 @@ const Cashier = () => {
             <DialogTitle>Struk Pembayaran</DialogTitle>
           </DialogHeader>
           {lastTransaction && (
-            <Receipt transaction={lastTransaction} />
+            <Receipt 
+              transaction={lastTransaction}
+              onPrint={() => window.print()}
+              onDownload={() => {
+                // Create a simple text receipt for download
+                const receiptText = `
+=================================
+        STRUK PEMBAYARAN
+=================================
+No. Struk: ${lastTransaction.receiptNumber}
+Tanggal: ${new Date(lastTransaction.timestamp).toLocaleString('id-ID')}
+Kasir: ${lastTransaction.cashierName}
+
+=================================
+          DAFTAR BELANJA          
+=================================
+${lastTransaction.items.map((item: any) => 
+  `${item.product.name}\n${item.quantity} x ${new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(item.product.price)} = ${new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(item.subtotal)}`
+).join('\n\n')}
+
+=================================
+Total: ${new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(lastTransaction.total)}
+Pajak: ${new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(lastTransaction.tax)}
+GRAND TOTAL: ${new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(lastTransaction.grandTotal)}
+
+Pembayaran: ${lastTransaction.paymentMethod}
+${lastTransaction.cashReceived ? `Tunai: ${new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(lastTransaction.cashReceived)}` : ''}
+${lastTransaction.change ? `Kembalian: ${new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(lastTransaction.change)}` : ''}
+
+=================================
+    Terima kasih atas pembelian
+       Anda di toko kami!
+=================================
+                `;
+                
+                const blob = new Blob([receiptText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `struk-${lastTransaction.receiptNumber}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }}
+            />
           )}
         </DialogContent>
       </Dialog>

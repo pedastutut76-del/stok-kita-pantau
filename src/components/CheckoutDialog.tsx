@@ -1,19 +1,28 @@
 import { useState } from "react";
-import { CartItem, Transaction } from "@/types/sales";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { CreditCard, DollarSign, Smartphone } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+
+interface CartItem {
+  product: {
+    id: string;
+    name: string;
+    price: number;
+  };
+  quantity: number;
+  subtotal: number;
+}
 
 interface CheckoutDialogProps {
   isOpen: boolean;
   onClose: () => void;
   items: CartItem[];
-  onComplete: (transaction: Transaction) => void;
+  onComplete: (transaction: any) => void;
 }
 
 export const CheckoutDialog = ({ isOpen, onClose, items, onComplete }: CheckoutDialogProps) => {
@@ -24,58 +33,47 @@ export const CheckoutDialog = ({ isOpen, onClose, items, onComplete }: CheckoutD
   const { toast } = useToast();
 
   const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
-  const tax = subtotal * 0.1;
+  const tax = Math.round(subtotal * 0.1);
   const grandTotal = subtotal + tax;
   const cashAmount = parseFloat(cashReceived) || 0;
-  const change = cashAmount - grandTotal;
-
-  const paymentMethods = [
-    { value: "cash", label: "Tunai", icon: DollarSign },
-    { value: "card", label: "Kartu", icon: CreditCard },
-    { value: "digital", label: "E-Wallet", icon: Smartphone },
-  ];
+  const change = paymentMethod === "cash" ? Math.max(0, cashAmount - grandTotal) : 0;
 
   const handleCheckout = async () => {
     if (paymentMethod === "cash" && cashAmount < grandTotal) {
       toast({
-        title: "Error",
-        description: "Jumlah uang tunai tidak mencukupi",
+        title: "Pembayaran tidak cukup",
+        description: "Jumlah uang yang diterima kurang dari total belanja",
         variant: "destructive",
       });
       return;
     }
 
     setIsProcessing(true);
+    
+    // Simulate processing delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    const transaction: Transaction = {
-      id: `TXN-${Date.now()}`,
-      items,
-      total: subtotal,
+    const transactionData = {
+      subtotal,
       tax,
       grandTotal,
       paymentMethod,
       cashReceived: paymentMethod === "cash" ? cashAmount : undefined,
       change: paymentMethod === "cash" ? change : undefined,
-      timestamp: new Date().toISOString(),
-      cashierName: "Admin Kasir",
-      receiptNumber: `RCP-${String(Date.now()).slice(-8)}`,
+      customerName: customerName || "Pelanggan",
     };
 
-    onComplete(transaction);
-    setIsProcessing(false);
-    onClose();
-
+    onComplete(transactionData);
+    
     // Reset form
+    setPaymentMethod("cash");
     setCashReceived("");
     setCustomerName("");
-    setPaymentMethod("cash");
-
+    setIsProcessing(false);
+    
     toast({
-      title: "Transaksi Berhasil",
-      description: `Pembayaran ${formatCurrency(grandTotal)} telah diproses`,
+      title: "Pembayaran berhasil!",
+      description: "Transaksi telah selesai diproses",
     });
   };
 
@@ -83,107 +81,85 @@ export const CheckoutDialog = ({ isOpen, onClose, items, onComplete }: CheckoutD
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Checkout Pembayaran</DialogTitle>
+          <DialogTitle>Checkout</DialogTitle>
+          <DialogDescription>
+            Selesaikan pembayaran untuk {items.length} item
+          </DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-6">
+        
+        <div className="space-y-4">
           {/* Order Summary */}
-          <div className="bg-muted/30 p-4 rounded-lg space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Subtotal ({items.length} item)</span>
-              <span>{formatCurrency(subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Pajak (10%)</span>
-              <span>{formatCurrency(tax)}</span>
-            </div>
-            <div className="flex justify-between text-lg font-bold pt-2 border-t">
-              <span>Total Pembayaran</span>
-              <span className="text-primary">{formatCurrency(grandTotal)}</span>
-            </div>
-          </div>
+          <Card>
+            <CardContent className="p-4 space-y-2">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span>{formatCurrency(subtotal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Pajak (10%)</span>
+                <span>{formatCurrency(tax)}</span>
+              </div>
+              <div className="flex justify-between font-bold text-lg">
+                <span>Total</span>
+                <span>{formatCurrency(grandTotal)}</span>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Customer Name */}
           <div className="space-y-2">
-            <Label htmlFor="customer">Nama Pelanggan (Opsional)</Label>
+            <Label htmlFor="customer">Nama Pelanggan</Label>
             <Input
               id="customer"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Masukkan nama pelanggan"
+              placeholder="Nama pelanggan (opsional)"
             />
           </div>
 
           {/* Payment Method */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <Label>Metode Pembayaran</Label>
-            <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-              {paymentMethods.map((method) => {
-                const Icon = method.icon;
-                return (
-                  <div key={method.value} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                    <RadioGroupItem value={method.value} id={method.value} />
-                    <Icon className="h-5 w-5 text-muted-foreground" />
-                    <Label htmlFor={method.value} className="flex-1 cursor-pointer">
-                      {method.label}
-                    </Label>
-                  </div>
-                );
-              })}
-            </RadioGroup>
+            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cash">Tunai</SelectItem>
+                <SelectItem value="card">Kartu</SelectItem>
+                <SelectItem value="e-wallet">E-Wallet</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Cash Payment */}
+          {/* Cash Payment Details */}
           {paymentMethod === "cash" && (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="cash">Jumlah Uang Tunai</Label>
-                <Input
-                  id="cash"
-                  type="number"
-                  value={cashReceived}
-                  onChange={(e) => setCashReceived(e.target.value)}
-                  placeholder="0"
-                  min="0"
-                />
-              </div>
-              
+            <div className="space-y-2">
+              <Label htmlFor="cash">Uang Diterima</Label>
+              <Input
+                id="cash"
+                type="number"
+                value={cashReceived}
+                onChange={(e) => setCashReceived(e.target.value)}
+                placeholder="0"
+              />
               {cashAmount > 0 && (
-                <div className="bg-muted/30 p-3 rounded-lg">
-                  <div className="flex justify-between text-sm">
-                    <span>Uang Diterima</span>
-                    <span>{formatCurrency(cashAmount)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm font-medium mt-1">
-                    <span>Kembalian</span>
-                    <span className={change >= 0 ? "text-success" : "text-destructive"}>
-                      {formatCurrency(Math.max(0, change))}
-                    </span>
-                  </div>
-                  {change < 0 && (
-                    <p className="text-xs text-destructive mt-1">
-                      Kurang {formatCurrency(Math.abs(change))}
-                    </p>
-                  )}
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  Kembalian: {formatCurrency(change)}
+                </p>
               )}
             </div>
           )}
-
-          {/* Buttons */}
-          <div className="flex space-x-3 pt-4">
-            <Button variant="outline" onClick={onClose} className="flex-1">
-              Batal
-            </Button>
-            <Button 
-              onClick={handleCheckout}
-              disabled={isProcessing || (paymentMethod === "cash" && cashAmount < grandTotal)}
-              className="flex-1 bg-gradient-primary hover:opacity-90"
-            >
-              {isProcessing ? "Memproses..." : "Bayar Sekarang"}
-            </Button>
-          </div>
         </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isProcessing}>
+            Batal
+          </Button>
+          <Button onClick={handleCheckout} disabled={isProcessing}>
+            {isProcessing ? "Memproses..." : `Bayar Sekarang - ${formatCurrency(grandTotal)}`}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

@@ -3,109 +3,52 @@ import { SearchBar } from "@/components/SearchBar";
 import { ProductCard } from "@/components/ProductCard";
 import { StockSummary } from "@/components/StockSummary";
 import { Package } from "lucide-react";
+import { useProducts } from "@/hooks/useProducts";
 import heroImage from "@/assets/warehouse-hero.jpg";
 
-// Sample data untuk demonstrasi
-const sampleProducts = [
-  {
-    id: "PRD001",
-    name: "Laptop Dell XPS 13",
-    category: "elektronik",
-    currentStock: 25,
-    minStock: 5,
-    location: "Gudang A-1",
-    lastUpdated: "2024-01-15 14:30",
-    price: 15000000,
-    barcode: "1234567890123"
-  },
-  {
-    id: "PRD002", 
-    name: "Mouse Wireless Logitech",
-    category: "elektronik",
-    currentStock: 3,
-    minStock: 10,
-    location: "Gudang A-2",
-    lastUpdated: "2024-01-15 10:15",
-    price: 250000,
-    barcode: "2234567890123"
-  },
-  {
-    id: "PRD003",
-    name: "Kopi Arabica Premium",
-    category: "makanan",
-    currentStock: 0,
-    minStock: 20,
-    location: "Gudang B-1",
-    lastUpdated: "2024-01-14 16:45",
-    price: 85000,
-    barcode: "3234567890123"
-  },
-  {
-    id: "PRD004",
-    name: "Kemeja Formal Putih",
-    category: "pakaian",
-    currentStock: 45,
-    minStock: 15,
-    location: "Gudang C-1",
-    lastUpdated: "2024-01-15 09:20",
-    price: 150000,
-    barcode: "4234567890123"
-  },
-  {
-    id: "PRD005",
-    name: "Pulpen Pilot Hitam",
-    category: "alat-tulis",
-    currentStock: 8,
-    minStock: 50,
-    location: "Gudang D-1",
-    lastUpdated: "2024-01-15 13:10",
-    price: 5000,
-    barcode: "5234567890123"
-  },
-  {
-    id: "PRD006",
-    name: "Meja Kantor Kayu",
-    category: "furniture",
-    currentStock: 12,
-    minStock: 3,
-    location: "Gudang E-1",
-    lastUpdated: "2024-01-15 11:30",
-    price: 1200000,
-    barcode: "6234567890123"
-  }
-];
-
 const Index = () => {
+  const { products, loading } = useProducts();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
 
   const filteredProducts = useMemo(() => {
-    return sampleProducts.filter(product => {
+    return products.filter(product => {
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           product.id.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
+      const matchesCategory = selectedCategory === "all" || product.category.toLowerCase() === selectedCategory.toLowerCase();
       
       let matchesStatus = true;
       if (selectedStatus !== "all") {
-        const stockStatus = product.currentStock === 0 ? "out" : 
-                          product.currentStock <= product.minStock ? "low" : "available";
+        const stockStatus = product.current_stock === 0 ? "out" : 
+                          product.current_stock <= product.min_stock ? "low" : "available";
         matchesStatus = stockStatus === selectedStatus;
       }
 
       return matchesSearch && matchesCategory && matchesStatus;
     });
-  }, [searchTerm, selectedCategory, selectedStatus]);
+  }, [products, searchTerm, selectedCategory, selectedStatus]);
 
   const stockSummary = useMemo(() => {
-    const total = sampleProducts.length;
-    const available = sampleProducts.filter(p => p.currentStock > p.minStock).length;
-    const lowStock = sampleProducts.filter(p => p.currentStock > 0 && p.currentStock <= p.minStock).length;
-    const outOfStock = sampleProducts.filter(p => p.currentStock === 0).length;
+    const total = products.length;
+    const available = products.filter(p => p.current_stock > p.min_stock).length;
+    const lowStock = products.filter(p => p.current_stock > 0 && p.current_stock <= p.min_stock).length;
+    const outOfStock = products.filter(p => p.current_stock === 0).length;
 
     return { total, available, lowStock, outOfStock };
-  }, []);
+  }, [products]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Package className="mx-auto h-12 w-12 text-muted-foreground animate-pulse" />
+          <p className="mt-2 text-muted-foreground">Memuat data produk...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -190,7 +133,15 @@ const Index = () => {
                   className="animate-fade-in-up"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  <ProductCard {...product} />
+                  <ProductCard 
+                    id={product.id}
+                    name={product.name}
+                    category={product.category}
+                    currentStock={product.current_stock}
+                    minStock={product.min_stock}
+                    location={product.location || ""}
+                    lastUpdated={new Date(product.updated_at).toLocaleDateString('id-ID')}
+                  />
                 </div>
               ))}
             </div>
