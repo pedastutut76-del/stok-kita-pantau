@@ -47,18 +47,25 @@ export const Navigation = () => {
   };
 
   return (
-    <nav className="bg-gradient-card border-b shadow-soft sticky top-0 z-50 backdrop-blur-sm">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center space-x-2">
-            <Receipt className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              StokKitaPantau
-            </span>
+    <nav className="bg-white/80 backdrop-blur-xl border-b border-border/50 sticky top-0 z-50 shadow-soft">
+      <div className="container mx-auto px-6">
+        <div className="flex items-center justify-between h-20">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 rounded-xl bg-gradient-primary shadow-medium">
+              <Receipt className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                StokKitaPantau
+              </span>
+              <span className="text-xs text-muted-foreground font-medium">
+                Sistem Manajemen Inventori
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <div className="flex space-x-2">
+          <div className="flex items-center space-x-3">
+            <div className="flex bg-muted/50 rounded-2xl p-1 space-x-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
@@ -67,16 +74,17 @@ export const Navigation = () => {
                   <Button
                     key={item.path}
                     asChild
-                    variant={isActive ? "default" : "ghost"}
-                    className={`flex items-center space-x-2 transition-all duration-300 ${
+                    variant="ghost"
+                    size="sm"
+                    className={`flex items-center space-x-2 rounded-xl px-4 py-2 transition-all duration-300 ${
                       isActive 
-                        ? "bg-gradient-primary text-primary-foreground shadow-soft" 
-                        : "hover:bg-primary/10 hover:text-primary"
+                        ? "bg-white text-primary shadow-medium font-semibold" 
+                        : "hover:bg-white/60 hover:text-primary text-muted-foreground"
                     }`}
                   >
                     <Link to={item.path}>
                       <Icon className="h-4 w-4" />
-                      <span className="hidden sm:inline">{item.label}</span>
+                      <span className="hidden md:inline text-sm">{item.label}</span>
                     </Link>
                   </Button>
                 );
@@ -85,16 +93,16 @@ export const Navigation = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 bg-muted/50 hover:bg-primary/10 hover:text-primary">
                   <User className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem disabled>
+              <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-strong border-0 bg-white/95 backdrop-blur-xl">
+                <DropdownMenuItem disabled className="text-sm font-medium">
                   {user?.email}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive hover:bg-destructive/10 rounded-lg">
                   <LogOut className="h-4 w-4 mr-2" />
                   Keluar
                 </DropdownMenuItem>

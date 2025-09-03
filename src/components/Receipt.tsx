@@ -65,10 +65,11 @@ export const Receipt = ({ transaction, onPrint, onDownload }: ReceiptProps) => {
         <div id="receipt-content" className="font-mono text-sm space-y-2">
           {/* Header */}
           <div className="text-center mb-4">
-            <h2 className="font-bold text-lg">STOK KITA PANTAU</h2>
-            <p className="text-xs">Sistem Kasir & Inventory</p>
-            <p className="text-xs">Jl. Contoh No. 123, Kota</p>
-            <p className="text-xs">Telp: (021) 123-4567</p>
+            <h2 className="font-bold text-lg">BZ SERVICE</h2>
+            <p className="text-xs">Hardware & Software Repair</p>
+            <p className="text-xs">Jl. Tugu Barat No. 03, Leuwimunding</p>
+            <p className="text-xs">Majalengka, Jawa Barat</p>
+            <p className="text-xs">Telp: 085129994074</p>
           </div>
 
           <div className="border-t border-dashed border-gray-400 pt-2">

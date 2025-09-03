@@ -1,16 +1,17 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Download, TrendingUp, DollarSign, ShoppingCart, Package, Filter } from "lucide-react";
+import { Calendar, Download, TrendingUp, DollarSign, ShoppingCart, Package, Filter, BarChart3 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { format, startOfDay, endOfDay, isWithinInterval, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import * as XLSX from 'xlsx';
 import { useToast } from "@/hooks/use-toast";
 import { useTransactions } from "@/hooks/useTransactions";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 const Reports = () => {
   const { transactions, loading } = useTransactions();
@@ -56,6 +57,28 @@ const Reports = () => {
   const topProducts = Object.values(productSales)
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 5);
+
+  // Chart data for sales trends
+  const salesChartData = useMemo(() => {
+    const dailySales = filteredTransactions.reduce((acc, transaction) => {
+      const date = format(new Date(transaction.created_at), "dd/MM");
+      if (!acc[date]) {
+        acc[date] = { date, revenue: 0, transactions: 0 };
+      }
+      acc[date].revenue += transaction.grand_total;
+      acc[date].transactions += 1;
+      return acc;
+    }, {} as Record<string, { date: string; revenue: number; transactions: number }>);
+
+    return Object.values(dailySales).sort((a, b) => a.date.localeCompare(b.date));
+  }, [filteredTransactions]);
+
+  // Chart data for top products
+  const productChartData = topProducts.map(product => ({
+    name: product.name.length > 15 ? product.name.substring(0, 15) + '...' : product.name,
+    revenue: product.revenue,
+    quantity: product.quantity
+  }));
 
   const exportToExcel = async () => {
     if (filteredTransactions.length === 0) {
@@ -260,6 +283,129 @@ const Reports = () => {
               </Card>
             );
           })}
+        </div>
+
+        {/* Sales Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Sales Trend Chart */}
+          <Card className="backdrop-blur-sm bg-card/95 border-0 shadow-xl rounded-2xl">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-xl bg-primary/10">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                </div>
+                Tren Penjualan
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {salesChartData.length === 0 ? (
+                <div className="text-center py-12">
+                  <BarChart3 className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    Belum ada data untuk menampilkan grafik
+                  </p>
+                </div>
+              ) : (
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={salesChartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis 
+                        dataKey="date" 
+                        stroke="#64748b"
+                        fontSize={12}
+                      />
+                      <YAxis 
+                        stroke="#64748b"
+                        fontSize={12}
+                        tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                      />
+                      <Tooltip 
+                        formatter={(value, name) => [
+                          name === 'revenue' ? formatCurrency(Number(value)) : value,
+                          name === 'revenue' ? 'Revenue' : 'Transaksi'
+                        ]}
+                        labelStyle={{ color: '#1e293b' }}
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="revenue" 
+                        stroke="#8b5cf6" 
+                        strokeWidth={3}
+                        dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6, stroke: '#8b5cf6', strokeWidth: 2 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Top Products Chart */}
+          <Card className="backdrop-blur-sm bg-card/95 border-0 shadow-xl rounded-2xl">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-xl bg-primary/10">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                </div>
+                Grafik Produk Terlaris
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {productChartData.length === 0 ? (
+                <div className="text-center py-12">
+                  <Package className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    Belum ada data untuk menampilkan grafik
+                  </p>
+                </div>
+              ) : (
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={productChartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis 
+                        dataKey="name" 
+                        stroke="#64748b"
+                        fontSize={12}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis 
+                        stroke="#64748b"
+                        fontSize={12}
+                        tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                      />
+                      <Tooltip 
+                        formatter={(value, name) => [
+                          name === 'revenue' ? formatCurrency(Number(value)) : `${value} pcs`,
+                          name === 'revenue' ? 'Revenue' : 'Qty Terjual'
+                        ]}
+                        labelStyle={{ color: '#1e293b' }}
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Bar 
+                        dataKey="revenue" 
+                        fill="#8b5cf6"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,8 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useProducts, Product } from "@/hooks/useProducts";
 import { useTransactions } from "@/hooks/useTransactions";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Edit, Trash2, Package, TrendingUp, AlertTriangle, ShoppingCart } from "lucide-react";
+import { Plus, Edit, Trash2, Package, TrendingUp, AlertTriangle, ShoppingCart, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const Admin = () => {
   const { products, loading, addProduct, updateProduct, deleteProduct } = useProducts();
@@ -45,6 +46,34 @@ const Admin = () => {
       barcode: "",
     });
   };
+
+  // Stock chart data
+  const stockChartData = useMemo(() => {
+    const stockLevels = products.map(product => ({
+      name: product.name.length > 15 ? product.name.substring(0, 15) + '...' : product.name,
+      current: product.current_stock,
+      minimum: product.min_stock,
+      status: product.current_stock === 0 ? 'Habis' : 
+              product.current_stock <= product.min_stock ? 'Rendah' : 'Aman'
+    })).slice(0, 10); // Show top 10 products
+
+    return stockLevels;
+  }, [products]);
+
+  // Stock status distribution
+  const stockStatusData = useMemo(() => {
+    const available = products.filter(p => p.current_stock > p.min_stock).length;
+    const low = products.filter(p => p.current_stock > 0 && p.current_stock <= p.min_stock).length;
+    const out = products.filter(p => p.current_stock === 0).length;
+
+    return [
+      { name: 'Stok Aman', value: available, color: '#10b981' },
+      { name: 'Stok Rendah', value: low, color: '#f59e0b' },
+      { name: 'Habis', value: out, color: '#ef4444' }
+    ].filter(item => item.value > 0);
+  }, [products]);
+
+  const COLORS = ['#10b981', '#f59e0b', '#ef4444'];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,7 +148,7 @@ const Admin = () => {
     totalTransactions: transactions.length,
   };
 
-  const ProductForm = () => (
+  const renderProductForm = () => (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -263,7 +292,7 @@ const Admin = () => {
                 Masukkan detail produk yang akan ditambahkan ke inventori
               </DialogDescription>
             </DialogHeader>
-            <ProductForm />
+            {renderProductForm()}
           </DialogContent>
         </Dialog>
       </div>
@@ -307,6 +336,126 @@ const Admin = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalTransactions}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Stock Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Stock Levels Chart */}
+        <Card className="backdrop-blur-sm bg-card/95 border-0 shadow-xl rounded-2xl">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 rounded-xl bg-primary/10">
+                <BarChart3 className="h-5 w-5 text-primary" />
+              </div>
+              Level Stok Produk
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {stockChartData.length === 0 ? (
+              <div className="text-center py-12">
+                <Package className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  Belum ada data produk untuk menampilkan grafik
+                </p>
+              </div>
+            ) : (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stockChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis 
+                      dataKey="name" 
+                      stroke="#64748b"
+                      fontSize={12}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis 
+                      stroke="#64748b"
+                      fontSize={12}
+                    />
+                    <Tooltip 
+                      formatter={(value, name) => [
+                        `${value} unit`,
+                        name === 'current' ? 'Stok Saat Ini' : 'Stok Minimum'
+                      ]}
+                      labelStyle={{ color: '#1e293b' }}
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Bar 
+                      dataKey="current" 
+                      fill="#8b5cf6"
+                      radius={[4, 4, 0, 0]}
+                      name="current"
+                    />
+                    <Bar 
+                      dataKey="minimum" 
+                      fill="#f59e0b"
+                      radius={[4, 4, 0, 0]}
+                      name="minimum"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Stock Status Distribution */}
+        <Card className="backdrop-blur-sm bg-card/95 border-0 shadow-xl rounded-2xl">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 rounded-xl bg-primary/10">
+                <TrendingUp className="h-5 w-5 text-primary" />
+              </div>
+              Distribusi Status Stok
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {stockStatusData.length === 0 ? (
+              <div className="text-center py-12">
+                <AlertTriangle className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  Belum ada data untuk menampilkan distribusi stok
+                </p>
+              </div>
+            ) : (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={stockStatusData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {stockStatusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value) => [`${value} produk`, 'Jumlah']}
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -435,7 +584,7 @@ const Admin = () => {
               Perbarui detail produk
             </DialogDescription>
           </DialogHeader>
-          <ProductForm />
+          {renderProductForm()}
         </DialogContent>
       </Dialog>
     </div>
