@@ -1,33 +1,26 @@
-import { useState, useEffect } from "react";
-import { Transaction } from "@/types/sales";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Download, TrendingUp, DollarSign, ShoppingCart, Package } from "lucide-react";
+import { Calendar, Download, TrendingUp, DollarSign, ShoppingCart, Package, Filter } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { format, startOfDay, endOfDay, isWithinInterval, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import * as XLSX from 'xlsx';
 import { useToast } from "@/hooks/use-toast";
+import { useTransactions } from "@/hooks/useTransactions";
 
 const Reports = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const { transactions, loading } = useTransactions();
   const [startDate, setStartDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [webhookUrl, setWebhookUrl] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Load transactions from localStorage
-    const savedTransactions = JSON.parse(localStorage.getItem('transactions') || '[]');
-    setTransactions(savedTransactions);
-  }, []);
-
   const filteredTransactions = transactions.filter(transaction => {
-    const transactionDate = parseISO(transaction.timestamp);
+    const transactionDate = parseISO(transaction.created_at);
     const start = startOfDay(new Date(startDate));
     const end = endOfDay(new Date(endDate));
     
@@ -36,20 +29,20 @@ const Reports = () => {
 
   const reportData = {
     totalTransactions: filteredTransactions.length,
-    totalRevenue: filteredTransactions.reduce((sum, t) => sum + t.grandTotal, 0),
+    totalRevenue: filteredTransactions.reduce((sum, t) => sum + t.grand_total, 0),
     totalItems: filteredTransactions.reduce((sum, t) => sum + t.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0),
     averageTransaction: filteredTransactions.length > 0 
-      ? filteredTransactions.reduce((sum, t) => sum + t.grandTotal, 0) / filteredTransactions.length 
+      ? filteredTransactions.reduce((sum, t) => sum + t.grand_total, 0) / filteredTransactions.length 
       : 0
   };
 
   // Top products analysis
   const productSales = filteredTransactions.reduce((acc, transaction) => {
     transaction.items.forEach(item => {
-      const productId = item.product.id;
+      const productId = item.product_id;
       if (!acc[productId]) {
         acc[productId] = {
-          name: item.product.name,
+          name: item.product_name,
           quantity: 0,
           revenue: 0
         };
@@ -79,15 +72,15 @@ const Reports = () => {
     try {
       // Prepare transaction data
       const transactionData = filteredTransactions.map(transaction => ({
-        'No Struk': transaction.receiptNumber,
-        'Tanggal': format(new Date(transaction.timestamp), "dd/MM/yyyy HH:mm", { locale: id }),
-        'Kasir': transaction.cashierName,
+        'No Struk': transaction.receipt_number,
+        'Tanggal': format(new Date(transaction.created_at), "dd/MM/yyyy HH:mm", { locale: id }),
+        'Kasir': transaction.cashier_name,
         'Jumlah Item': transaction.items.reduce((sum, item) => sum + item.quantity, 0),
         'Subtotal': transaction.total,
         'Pajak': transaction.tax,
-        'Total': transaction.grandTotal,
-        'Metode Bayar': transaction.paymentMethod.toUpperCase(),
-        'Uang Diterima': transaction.cashReceived || 0,
+        'Total': transaction.grand_total,
+        'Metode Bayar': transaction.payment_method.toUpperCase(),
+        'Uang Diterima': transaction.cash_received || 0,
         'Kembalian': transaction.change || 0
       }));
 
@@ -137,10 +130,6 @@ const Reports = () => {
         description: `Laporan telah disimpan sebagai ${fileName}`,
       });
 
-      // Trigger Zapier webhook if provided
-      if (webhookUrl) {
-        await triggerZapierWebhook();
-      }
 
     } catch (error) {
       console.error("Export error:", error);
@@ -154,37 +143,6 @@ const Reports = () => {
     }
   };
 
-  const triggerZapierWebhook = async () => {
-    try {
-      await fetch(webhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        mode: "no-cors",
-        body: JSON.stringify({
-          reportType: "sales",
-          period: `${startDate} to ${endDate}`,
-          totalTransactions: reportData.totalTransactions,
-          totalRevenue: reportData.totalRevenue,
-          timestamp: new Date().toISOString(),
-          triggered_from: window.location.origin,
-        }),
-      });
-
-      toast({
-        title: "Webhook Triggered",
-        description: "Notifikasi laporan telah dikirim ke Zapier",
-      });
-    } catch (error) {
-      console.error("Webhook error:", error);
-      toast({
-        title: "Webhook Error",
-        description: "Gagal mengirim notifikasi ke Zapier",
-        variant: "destructive",
-      });
-    }
-  };
 
   const summaryCards = [
     {
@@ -213,153 +171,180 @@ const Reports = () => {
     }
   ];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto p-4 space-y-8">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-          Laporan Penjualan
-        </h1>
-        <p className="text-muted-foreground">Analisis dan laporan lengkap untuk bisnis Anda</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Modern Header */}
+        <div className="text-center space-y-4">
+          <h1 className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            Laporan Penjualan
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Analisis mendalam performa bisnis Anda dengan visual yang elegan
+          </p>
+        </div>
 
-      {/* Filters and Export */}
-      <Card className="bg-gradient-card border-0 shadow-medium">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Filter & Export Laporan
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="start-date">Tanggal Mulai</Label>
-              <Input
-                id="start-date"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="end-date">Tanggal Selesai</Label>
-              <Input
-                id="end-date"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="webhook">Zapier Webhook URL (Optional)</Label>
-              <Input
-                id="webhook"
-                type="url"
-                value={webhookUrl}
-                onChange={(e) => setWebhookUrl(e.target.value)}
-                placeholder="https://hooks.zapier.com/..."
-              />
-            </div>
-            <div className="space-y-2 flex items-end">
-              <Button 
-                onClick={exportToExcel}
-                disabled={isExporting}
-                className="w-full bg-gradient-primary hover:opacity-90 transition-opacity"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                {isExporting ? "Mengexport..." : "Export Excel"}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {summaryCards.map((card, index) => {
-          const IconComponent = card.icon;
-          return (
-            <Card key={index} className={`${card.className} hover:shadow-medium transition-shadow bg-gradient-card border-0`}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {card.title}
-                </CardTitle>
-                <IconComponent className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{card.value}</div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Products */}
-        <Card className="bg-gradient-card border-0 shadow-medium">
-          <CardHeader>
-            <CardTitle>Produk Terlaris</CardTitle>
+        {/* Modern Filter Card */}
+        <Card className="backdrop-blur-sm bg-card/95 border-0 shadow-xl rounded-2xl">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 rounded-xl bg-primary/10">
+                <Filter className="h-5 w-5 text-primary" />
+              </div>
+              Filter & Export
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            {topProducts.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">
-                Tidak ada data penjualan untuk periode ini
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {topProducts.map((product, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-background/50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <Badge variant="outline" className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold">
-                        {index + 1}
-                      </Badge>
-                      <div>
-                        <p className="font-medium text-sm">{product.name}</p>
-                        <p className="text-xs text-muted-foreground">Qty: {product.quantity}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="start-date" className="text-sm font-medium">Dari Tanggal</Label>
+                <Input
+                  id="start-date"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="rounded-xl border-0 bg-muted/50 focus:bg-background transition-colors"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="end-date" className="text-sm font-medium">Sampai Tanggal</Label>
+                <Input
+                  id="end-date"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="rounded-xl border-0 bg-muted/50 focus:bg-background transition-colors"
+                />
+              </div>
+              <div className="flex items-end">
+                <Button 
+                  onClick={exportToExcel}
+                  disabled={isExporting || filteredTransactions.length === 0}
+                  className="w-full h-11 rounded-xl bg-gradient-primary hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {isExporting ? "Mengexport..." : "Download Excel"}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Modern Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {summaryCards.map((card, index) => {
+            const IconComponent = card.icon;
+            return (
+              <Card key={index} className="backdrop-blur-sm bg-card/95 border-0 shadow-xl rounded-2xl hover:shadow-2xl transition-all duration-300 group">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {card.title}
+                      </p>
+                      <p className="text-3xl font-bold tracking-tight">{card.value}</p>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                      <IconComponent className="h-6 w-6 text-primary" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Top Products */}
+          <Card className="backdrop-blur-sm bg-card/95 border-0 shadow-xl rounded-2xl">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-xl bg-primary/10">
+                  <Package className="h-5 w-5 text-primary" />
+                </div>
+                Produk Terlaris
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {topProducts.length === 0 ? (
+                <div className="text-center py-12">
+                  <Package className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    Belum ada data penjualan untuk periode ini
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {topProducts.map((product, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-sm font-bold text-primary">#{index + 1}</span>
+                        </div>
+                        <div>
+                          <p className="font-semibold">{product.name}</p>
+                          <p className="text-sm text-muted-foreground">{product.quantity} terjual</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-lg">{formatCurrency(product.revenue)}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-sm">{formatCurrency(product.revenue)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Recent Transactions */}
-        <Card className="bg-gradient-card border-0 shadow-medium">
-          <CardHeader>
-            <CardTitle>Transaksi Terbaru</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {filteredTransactions.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">
-                Tidak ada transaksi untuk periode ini
-              </p>
-            ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {filteredTransactions.slice(0, 10).reverse().map((transaction) => (
-                  <div key={transaction.id} className="flex items-center justify-between p-3 bg-background/50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-sm">{transaction.receiptNumber}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(transaction.timestamp), "dd/MM HH:mm")}
-                      </p>
+          {/* Recent Transactions */}
+          <Card className="backdrop-blur-sm bg-card/95 border-0 shadow-xl rounded-2xl">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-xl bg-primary/10">
+                  <ShoppingCart className="h-5 w-5 text-primary" />
+                </div>
+                Transaksi Terbaru
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {filteredTransactions.length === 0 ? (
+                <div className="text-center py-12">
+                  <ShoppingCart className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    Belum ada transaksi untuk periode ini
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {filteredTransactions.slice(0, 10).reverse().map((transaction) => (
+                    <div key={transaction.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors">
+                      <div>
+                        <p className="font-semibold">{transaction.receipt_number}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {format(new Date(transaction.created_at), "dd/MM HH:mm")} • {transaction.cashier_name}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-lg">{formatCurrency(transaction.grand_total)}</p>
+                        <Badge variant="outline" className="text-xs rounded-full">
+                          {transaction.payment_method}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-sm">{formatCurrency(transaction.grandTotal)}</p>
-                      <Badge variant="outline" className="text-xs">
-                        {transaction.paymentMethod}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
