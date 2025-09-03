@@ -26,6 +26,7 @@ const Admin = () => {
     name: "",
     category: "",
     price: "",
+    purchase_price: "",
     current_stock: "",
     min_stock: "",
     location: "",
@@ -37,6 +38,7 @@ const Admin = () => {
       name: "",
       category: "",
       price: "",
+      purchase_price: "",
       current_stock: "",
       min_stock: "",
       location: "",
@@ -47,10 +49,10 @@ const Admin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.category || !formData.price) {
+    if (!formData.name || !formData.category || !formData.price || !formData.purchase_price) {
       toast({
         title: "Error",
-        description: "Nama, kategori, dan harga wajib diisi",
+        description: "Nama, kategori, harga beli, dan harga jual wajib diisi",
         variant: "destructive",
       });
       return;
@@ -60,6 +62,7 @@ const Admin = () => {
       name: formData.name,
       category: formData.category,
       price: parseInt(formData.price),
+      purchase_price: parseInt(formData.purchase_price),
       current_stock: parseInt(formData.current_stock) || 0,
       min_stock: parseInt(formData.min_stock) || 5,
       location: formData.location || null,
@@ -88,6 +91,7 @@ const Admin = () => {
       name: product.name,
       category: product.category,
       price: product.price.toString(),
+      purchase_price: product.purchase_price.toString(),
       current_stock: product.current_stock.toString(),
       min_stock: product.min_stock.toString(),
       location: product.location || "",
@@ -146,9 +150,19 @@ const Admin = () => {
         </div>
       </div>
       
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="price">Harga *</Label>
+          <Label htmlFor="purchase_price">Harga Beli *</Label>
+          <Input
+            id="purchase_price"
+            type="number"
+            value={formData.purchase_price}
+            onChange={(e) => setFormData(prev => ({ ...prev, purchase_price: e.target.value }))}
+            placeholder="0"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="price">Harga Jual *</Label>
           <Input
             id="price"
             type="number"
@@ -157,6 +171,9 @@ const Admin = () => {
             placeholder="0"
           />
         </div>
+      </div>
+      
+      <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="current_stock">Stok Saat Ini</Label>
           <Input
@@ -314,7 +331,8 @@ const Admin = () => {
                   <TableRow>
                     <TableHead>Nama</TableHead>
                     <TableHead>Kategori</TableHead>
-                    <TableHead>Harga</TableHead>
+                    <TableHead>Harga Beli</TableHead>
+                    <TableHead>Harga Jual</TableHead>
                     <TableHead>Stok</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Lokasi</TableHead>
@@ -328,6 +346,7 @@ const Admin = () => {
                       <TableRow key={product.id}>
                         <TableCell className="font-medium">{product.name}</TableCell>
                         <TableCell>{product.category}</TableCell>
+                        <TableCell>{formatCurrency(product.purchase_price)}</TableCell>
                         <TableCell>{formatCurrency(product.price)}</TableCell>
                         <TableCell>{product.current_stock}</TableCell>
                         <TableCell>

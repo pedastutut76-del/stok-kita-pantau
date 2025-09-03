@@ -7,6 +7,7 @@ export interface Product {
   name: string;
   category: string;
   price: number;
+  purchase_price: number;
   current_stock: number;
   min_stock: number;
   location: string | null;
