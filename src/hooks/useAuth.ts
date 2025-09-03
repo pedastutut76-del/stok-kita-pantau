@@ -115,6 +115,33 @@ export const useAuth = () => {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Berhasil",
+        description: "Link reset password telah dikirim ke email Anda.",
+      });
+      
+      return { success: true };
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { success: false, error };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     user,
     session,
@@ -122,5 +149,6 @@ export const useAuth = () => {
     signUp,
     signIn,
     signOut,
+    resetPassword,
   };
 };
