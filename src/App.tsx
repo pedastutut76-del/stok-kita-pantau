@@ -11,6 +11,7 @@ import Reports from "./pages/Reports";
 import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
 import ProfitLoss from "./pages/ProfitLoss";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
                   <Route path="/laporan" element={<Reports />} />
                   <Route path="/laba-rugi" element={<ProfitLoss />} />
                   <Route path="/admin" element={<Admin />} />
+                  <Route path="/settings" element={<Settings />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </ProtectedRoute>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 
 interface CartItem {
   product: {
@@ -31,9 +32,22 @@ export const CheckoutDialog = ({ isOpen, onClose, items, onComplete }: CheckoutD
   const [customerName, setCustomerName] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
+  const { settings: receiptSettings } = useReceiptSettings();
 
   const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
-  const tax = Math.round(subtotal * 0.1);
+  
+  // Calculate tax based on receipt settings
+  const calculateTax = () => {
+    if (!receiptSettings.show_tax) return 0;
+    
+    if (receiptSettings.tax_type === 'percentage') {
+      return Math.round(subtotal * (receiptSettings.tax_rate / 100));
+    } else {
+      return receiptSettings.tax_rate;
+    }
+  };
+  
+  const tax = calculateTax();
   const grandTotal = subtotal + tax;
   const cashAmount = parseFloat(cashReceived) || 0;
   const change = paymentMethod === "cash" ? Math.max(0, cashAmount - grandTotal) : 0;
@@ -95,10 +109,14 @@ export const CheckoutDialog = ({ isOpen, onClose, items, onComplete }: CheckoutD
                 <span>Subtotal</span>
                 <span>{formatCurrency(subtotal)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Pajak (10%)</span>
-                <span>{formatCurrency(tax)}</span>
-              </div>
+              {receiptSettings.show_tax && (
+                <div className="flex justify-between">
+                  <span>
+                    Pajak ({receiptSettings.tax_type === 'percentage' ? `${receiptSettings.tax_rate}%` : 'Tetap'})
+                  </span>
+                  <span>{formatCurrency(tax)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
                 <span>{formatCurrency(grandTotal)}</span>

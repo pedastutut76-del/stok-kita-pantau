@@ -103,12 +103,12 @@ export const Navigation = () => {
                   {user?.email}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <UserProfileDialog>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="hover:bg-primary/10 rounded-lg cursor-pointer">
-                    <User className="h-4 w-4 mr-2" />
-                    Profile & Akun
-                  </DropdownMenuItem>
-                </UserProfileDialog>
+                <DropdownMenuItem asChild className="hover:bg-primary/10 rounded-lg cursor-pointer">
+                  <Link to="/settings">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Pengaturan & Profil
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive hover:bg-destructive/10 rounded-lg">
                   <LogOut className="h-4 w-4 mr-2" />

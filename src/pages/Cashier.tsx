@@ -6,6 +6,8 @@ import { Receipt } from "@/components/Receipt";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useProducts, Product } from "@/hooks/useProducts";
 import { useTransactions, TransactionItem } from "@/hooks/useTransactions";
+import { useReceiptSettings } from "@/hooks/useReceiptSettings";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Package } from "lucide-react";
 
@@ -18,6 +20,8 @@ interface CartItem {
 const Cashier = () => {
   const { products, updateStock, loading } = useProducts();
   const { addTransaction, generateReceiptNumber } = useTransactions();
+  const { settings: receiptSettings } = useReceiptSettings();
+  const { user } = useAuth();
   const { toast } = useToast();
   
   const [cart, setCart] = useState<CartItem[]>([]);

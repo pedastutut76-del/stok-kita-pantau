@@ -26,23 +26,42 @@ export const useProducts = () => {
 
   const fetchProducts = async () => {
     try {
-      if (!user?.id) return;
+      if (!user?.id) {
+        setProducts([]);
+        setLoading(false);
+        return;
+      }
       
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // First try to fetch with user_id filter
+      let { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('user_id', user.id)
         .order('name');
 
+      // If user_id column doesn't exist, try without filter
+      if (error && error.message.includes('user_id')) {
+        console.log('user_id column not found, fetching all products');
+        const result = await supabase
+          .from('products')
+          .select('*')
+          .order('name');
+        data = result.data;
+        error = result.error;
+      }
+
       if (error) throw error;
       setProducts((data as Product[]) || []);
     } catch (error: any) {
+      console.error('Product fetch error:', error);
       toast({
         title: "Error",
         description: "Gagal memuat data produk: " + error.message,
         variant: "destructive",
       });
+      setProducts([]);
     } finally {
       setLoading(false);
     }

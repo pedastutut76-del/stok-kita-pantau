@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Printer, Download } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { ReceiptPreview } from "./ReceiptPreview";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 

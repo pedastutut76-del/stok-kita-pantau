@@ -142,34 +142,106 @@ export const useAuth = () => {
     }
   };
 
-  const changePassword = async (currentPassword: string, newPassword: string) => {
+
+  const updateProfile = async (profileData: { 
+    full_name?: string; 
+    email?: string; 
+    phone?: string; 
+    store_name?: string; 
+    business_name?: string; 
+    business_type?: string; 
+    address?: string; 
+    city?: string; 
+    province?: string; 
+    postal_code?: string; 
+    country?: string; 
+    tax_number?: string; 
+    business_license?: string; 
+    description?: string; 
+  }) => {
     try {
       setLoading(true);
       
-      // First verify current password by attempting to sign in
-      const { error: verifyError } = await supabase.auth.signInWithPassword({
-        email: user?.email || '',
-        password: currentPassword,
-      });
+      if (!user?.id) throw new Error('User not authenticated');
       
-      if (verifyError) {
-        throw new Error('Password saat ini salah');
+      console.log('Updating profile for user:', user.id);
+      console.log('Profile data:', profileData);
+      
+      // First check if profile exists
+      const { data: existingProfile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      let result;
+      if (existingProfile) {
+        // Update existing profile
+        result = await supabase
+          .from('user_profiles')
+          .update({
+            full_name: profileData.full_name || null,
+            email: profileData.email || user.email,
+            phone: profileData.phone || null,
+            store_name: profileData.store_name || null,
+            business_name: profileData.business_name || null,
+            business_type: profileData.business_type || 'retail',
+            address: profileData.address || null,
+            city: profileData.city || null,
+            province: profileData.province || null,
+            postal_code: profileData.postal_code || null,
+            country: profileData.country || 'Indonesia',
+            tax_number: profileData.tax_number || null,
+            business_license: profileData.business_license || null,
+            description: profileData.description || null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+      } else {
+        // Insert new profile
+        result = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: user.id,
+            full_name: profileData.full_name || null,
+            email: profileData.email || user.email,
+            phone: profileData.phone || null,
+            store_name: profileData.store_name || null,
+            business_name: profileData.business_name || null,
+            business_type: profileData.business_type || 'retail',
+            address: profileData.address || null,
+            city: profileData.city || null,
+            province: profileData.province || null,
+            postal_code: profileData.postal_code || null,
+            country: profileData.country || 'Indonesia',
+            tax_number: profileData.tax_number || null,
+            business_license: profileData.business_license || null,
+            description: profileData.description || null
+          });
       }
+
+      const { error } = result;
       
-      // Update password
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
+      // If table doesn't exist, show info message
+      if (error && (error.message.includes('relation') || error.message.includes('does not exist'))) {
+        console.log('user_profiles table not found, profile update skipped');
+        toast({
+          title: "Info",
+          description: "Tabel profil belum ada. Jalankan migration database terlebih dahulu.",
+        });
+        return { success: true };
+      }
       
       if (error) throw error;
       
       toast({
         title: "Berhasil",
-        description: "Password berhasil diubah.",
+        description: "Profile berhasil diperbarui.",
       });
       
       return { success: true };
     } catch (error: any) {
+      console.error('Profile update error:', error);
       toast({
         title: "Error",
         description: error.message,
@@ -181,26 +253,34 @@ export const useAuth = () => {
     }
   };
 
-  const updateProfile = async (profileData: { business_name?: string; full_name?: string; phone?: string; address?: string }) => {
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      const { error } = await supabase
-        .from('user_profiles')
-        .upsert({
-          user_id: user?.id,
-          ...profileData
-        } as any);
-      
+      // First verify the current password by attempting to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password: currentPassword,
+      });
+
+      if (signInError) {
+        throw new Error('Password lama tidak benar');
+      }
+
+      // If verification successful, update the password
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
       if (error) throw error;
-      
+
       toast({
         title: "Berhasil",
-        description: "Profile berhasil diperbarui.",
+        description: "Password berhasil diubah.",
       });
       
       return { success: true };
     } catch (error: any) {
+      console.error('Password change error:', error);
       toast({
         title: "Error",
         description: error.message,
@@ -214,13 +294,12 @@ export const useAuth = () => {
 
   return {
     user,
-    session,
     loading,
     signUp,
     signIn,
     signOut,
-    resetPassword,
-    changePassword,
     updateProfile,
+    changePassword,
+    resetPassword,
   };
 };

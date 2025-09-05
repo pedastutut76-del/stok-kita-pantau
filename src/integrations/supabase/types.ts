@@ -106,34 +106,229 @@ export type Database = {
       }
       user_profiles: {
         Row: {
-          address: string | null
-          business_name: string | null
-          created_at: string
-          full_name: string | null
           id: string
-          phone: string | null
-          updated_at: string
           user_id: string
+          full_name: string | null
+          email: string | null
+          phone: string | null
+          store_name: string | null
+          business_name: string | null
+          business_type: string | null
+          address: string | null
+          city: string | null
+          province: string | null
+          postal_code: string | null
+          country: string | null
+          tax_number: string | null
+          business_license: string | null
+          description: string | null
+          currency: string | null
+          timezone: string | null
+          language: string | null
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          address?: string | null
-          business_name?: string | null
-          created_at?: string
-          full_name?: string | null
           id?: string
-          phone?: string | null
-          updated_at?: string
           user_id: string
+          full_name?: string | null
+          email?: string | null
+          phone?: string | null
+          store_name?: string | null
+          business_name?: string | null
+          business_type?: string | null
+          address?: string | null
+          city?: string | null
+          province?: string | null
+          postal_code?: string | null
+          country?: string | null
+          tax_number?: string | null
+          business_license?: string | null
+          description?: string | null
+          currency?: string | null
+          timezone?: string | null
+          language?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          address?: string | null
-          business_name?: string | null
-          created_at?: string
-          full_name?: string | null
           id?: string
-          phone?: string | null
-          updated_at?: string
           user_id?: string
+          full_name?: string | null
+          email?: string | null
+          phone?: string | null
+          store_name?: string | null
+          business_name?: string | null
+          business_type?: string | null
+          address?: string | null
+          city?: string | null
+          province?: string | null
+          postal_code?: string | null
+          country?: string | null
+          tax_number?: string | null
+          business_license?: string | null
+          description?: string | null
+          currency?: string | null
+          timezone?: string | null
+          language?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          id: string
+          auth_user_id: string
+          email: string
+          full_name: string | null
+          avatar_url: string | null
+          store_name: string | null
+          business_name: string | null
+          business_type: string | null
+          phone: string | null
+          address: string | null
+          city: string | null
+          province: string | null
+          is_active: boolean | null
+          is_verified: boolean | null
+          last_login_at: string | null
+          subscription_plan: string | null
+          subscription_status: string | null
+          subscription_expires_at: string | null
+          total_products: number | null
+          total_transactions: number | null
+          total_revenue: number | null
+          currency: string | null
+          timezone: string | null
+          language: string | null
+          theme: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          auth_user_id: string
+          email: string
+          full_name?: string | null
+          avatar_url?: string | null
+          store_name?: string | null
+          business_name?: string | null
+          business_type?: string | null
+          phone?: string | null
+          address?: string | null
+          city?: string | null
+          province?: string | null
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          last_login_at?: string | null
+          subscription_plan?: string | null
+          subscription_status?: string | null
+          subscription_expires_at?: string | null
+          total_products?: number | null
+          total_transactions?: number | null
+          total_revenue?: number | null
+          currency?: string | null
+          timezone?: string | null
+          language?: string | null
+          theme?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          auth_user_id?: string
+          email?: string
+          full_name?: string | null
+          avatar_url?: string | null
+          store_name?: string | null
+          business_name?: string | null
+          business_type?: string | null
+          phone?: string | null
+          address?: string | null
+          city?: string | null
+          province?: string | null
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          last_login_at?: string | null
+          subscription_plan?: string | null
+          subscription_status?: string | null
+          subscription_expires_at?: string | null
+          total_products?: number | null
+          total_transactions?: number | null
+          total_revenue?: number | null
+          currency?: string | null
+          timezone?: string | null
+          language?: string | null
+          theme?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      receipt_settings: {
+        Row: {
+          id: string
+          user_id: string
+          show_logo: boolean | null
+          logo_url: string | null
+          header_text: string | null
+          footer_text: string | null
+          show_address: boolean | null
+          show_phone: boolean | null
+          show_email: boolean | null
+          show_tax_number: boolean | null
+          paper_size: string | null
+          font_size: string | null
+          show_qr_code: boolean | null
+          currency_symbol: string | null
+          show_tax: boolean | null
+          tax_rate: number | null
+          tax_type: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          show_logo?: boolean | null
+          logo_url?: string | null
+          header_text?: string | null
+          footer_text?: string | null
+          show_address?: boolean | null
+          show_phone?: boolean | null
+          show_email?: boolean | null
+          show_tax_number?: boolean | null
+          paper_size?: string | null
+          font_size?: string | null
+          show_qr_code?: boolean | null
+          currency_symbol?: string | null
+          show_tax?: boolean | null
+          tax_rate?: number | null
+          tax_type?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          show_logo?: boolean | null
+          logo_url?: string | null
+          header_text?: string | null
+          footer_text?: string | null
+          show_address?: boolean | null
+          show_phone?: boolean | null
+          show_email?: boolean | null
+          show_tax_number?: boolean | null
+          paper_size?: string | null
+          font_size?: string | null
+          show_qr_code?: boolean | null
+          currency_symbol?: string | null
+          show_tax?: boolean | null
+          tax_rate?: number | null
+          tax_type?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Relationships: []
       }

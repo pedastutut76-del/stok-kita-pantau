@@ -34,14 +34,31 @@ export const useTransactions = () => {
 
   const fetchTransactions = async () => {
     try {
-      if (!user?.id) return;
+      if (!user?.id) {
+        setTransactions([]);
+        setLoading(false);
+        return;
+      }
       
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // First try to fetch with user_id filter
+      let { data, error } = await supabase
         .from('transactions')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+
+      // If user_id column doesn't exist, try without filter
+      if (error && error.message.includes('user_id')) {
+        console.log('user_id column not found, fetching all transactions');
+        const result = await supabase
+          .from('transactions')
+          .select('*')
+          .order('created_at', { ascending: false });
+        data = result.data;
+        error = result.error;
+      }
 
       if (error) throw error;
       
@@ -53,11 +70,13 @@ export const useTransactions = () => {
       
       setTransactions(transformedData as Transaction[]);
     } catch (error: any) {
+      console.error('Transaction fetch error:', error);
       toast({
         title: "Error",
         description: "Gagal memuat data transaksi: " + error.message,
         variant: "destructive",
       });
+      setTransactions([]);
     } finally {
       setLoading(false);
     }
