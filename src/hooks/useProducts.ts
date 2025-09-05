@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface Product {
   id: string;
@@ -12,6 +13,7 @@ export interface Product {
   min_stock: number;
   location: string | null;
   barcode: string | null;
+  user_id: string;
   created_at: string;
   updated_at: string;
 }
@@ -20,17 +22,21 @@ export const useProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const fetchProducts = async () => {
     try {
+      if (!user?.id) return;
+      
       setLoading(true);
       const { data, error } = await supabase
         .from('products')
         .select('*')
+        .eq('user_id', user.id)
         .order('name');
 
       if (error) throw error;
-      setProducts(data || []);
+      setProducts((data as Product[]) || []);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -42,11 +48,13 @@ export const useProducts = () => {
     }
   };
 
-  const addProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
+  const addProduct = async (productData: Omit<Product, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     try {
+      if (!user?.id) throw new Error('User not authenticated');
+      
       const { data, error } = await supabase
         .from('products')
-        .insert([productData])
+        .insert([{ ...productData, user_id: user.id }])
         .select()
         .single();
 
@@ -125,8 +133,10 @@ export const useProducts = () => {
   };
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    if (user?.id) {
+      fetchProducts();
+    }
+  }, [user?.id]);
 
   return {
     products,

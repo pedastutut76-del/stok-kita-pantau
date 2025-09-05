@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Package, ShoppingCart, BarChart3, Receipt, Settings, TrendingUp, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { UserProfileDialog } from "@/components/UserProfileDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -101,6 +102,13 @@ export const Navigation = () => {
                 <DropdownMenuItem disabled className="text-sm font-medium">
                   {user?.email}
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <UserProfileDialog>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="hover:bg-primary/10 rounded-lg cursor-pointer">
+                    <User className="h-4 w-4 mr-2" />
+                    Profile & Akun
+                  </DropdownMenuItem>
+                </UserProfileDialog>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive hover:bg-destructive/10 rounded-lg">
                   <LogOut className="h-4 w-4 mr-2" />

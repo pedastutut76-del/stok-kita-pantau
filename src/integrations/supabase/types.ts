@@ -27,6 +27,7 @@ export type Database = {
           price: number
           purchase_price: number
           updated_at: string
+          user_id: string
         }
         Insert: {
           barcode?: string | null
@@ -40,6 +41,7 @@ export type Database = {
           price: number
           purchase_price?: number
           updated_at?: string
+          user_id: string
         }
         Update: {
           barcode?: string | null
@@ -53,6 +55,7 @@ export type Database = {
           price?: number
           purchase_price?: number
           updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -69,6 +72,7 @@ export type Database = {
           receipt_number: string
           tax: number
           total: number
+          user_id: string
         }
         Insert: {
           cash_received?: number | null
@@ -82,6 +86,7 @@ export type Database = {
           receipt_number: string
           tax: number
           total: number
+          user_id: string
         }
         Update: {
           cash_received?: number | null
@@ -95,6 +100,40 @@ export type Database = {
           receipt_number?: string
           tax?: number
           total?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          address: string | null
+          business_name: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          business_name?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          business_name?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

@@ -142,6 +142,76 @@ export const useAuth = () => {
     }
   };
 
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+      setLoading(true);
+      
+      // First verify current password by attempting to sign in
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password: currentPassword,
+      });
+      
+      if (verifyError) {
+        throw new Error('Password saat ini salah');
+      }
+      
+      // Update password
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Berhasil",
+        description: "Password berhasil diubah.",
+      });
+      
+      return { success: true };
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { success: false, error };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateProfile = async (profileData: { business_name?: string; full_name?: string; phone?: string; address?: string }) => {
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase
+        .from('user_profiles')
+        .upsert({
+          user_id: user?.id,
+          ...profileData
+        } as any);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Berhasil",
+        description: "Profile berhasil diperbarui.",
+      });
+      
+      return { success: true };
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { success: false, error };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     user,
     session,
@@ -150,5 +220,7 @@ export const useAuth = () => {
     signIn,
     signOut,
     resetPassword,
+    changePassword,
+    updateProfile,
   };
 };
