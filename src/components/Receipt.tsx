@@ -24,6 +24,7 @@ interface UserProfile {
   phone?: string;
   email?: string;
   tax_number?: string;
+  full_name?: string;
 }
 
 export const Receipt = ({ transaction, onPrint, onDownload }: ReceiptProps) => {
@@ -41,7 +42,7 @@ export const Receipt = ({ transaction, onPrint, onDownload }: ReceiptProps) => {
     try {
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('store_name, business_name, address, phone, email, tax_number')
+        .select('store_name, business_name, address, phone, email, tax_number, full_name')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -52,7 +53,8 @@ export const Receipt = ({ transaction, onPrint, onDownload }: ReceiptProps) => {
           address: data.address || '',
           phone: data.phone || '',
           email: data.email || user.email || '',
-          tax_number: data.tax_number || ''
+          tax_number: data.tax_number || '',
+          full_name: data.full_name || ''
         });
       }
     } catch (error) {
@@ -163,7 +165,7 @@ export const Receipt = ({ transaction, onPrint, onDownload }: ReceiptProps) => {
             </div>
             <div className="flex justify-between mb-4">
               <span>Kasir:</span>
-              <span>{transaction.cashierName}</span>
+              <span>{userProfile.full_name || transaction.cashierName || 'Admin'}</span>
             </div>
           </div>
 

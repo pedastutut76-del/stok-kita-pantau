@@ -10,15 +10,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useProducts, Product } from "@/hooks/useProducts";
 import { useTransactions } from "@/hooks/useTransactions";
+import { useCategories } from "@/hooks/useCategories";
+import { CategoryManager } from "@/components/CategoryManager";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Edit, Trash2, Package, TrendingUp, AlertTriangle, ShoppingCart, BarChart3 } from "lucide-react";
+import { Plus, Edit, Trash2, Package, TrendingUp, AlertTriangle, ShoppingCart, BarChart3, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const Admin = () => {
   const { products, loading, addProduct, updateProduct, deleteProduct } = useProducts();
   const { transactions } = useTransactions();
+  const { categories, loading: categoriesLoading } = useCategories();
   const { toast } = useToast();
+
+  // Debug logging to check categories
+  console.log('Categories in Admin:', categories);
+  console.log('Categories loading:', categoriesLoading);
   
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -167,15 +174,24 @@ const Admin = () => {
               <SelectValue placeholder="Pilih kategori" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Makanan">Makanan</SelectItem>
-              <SelectItem value="Minuman">Minuman</SelectItem>
-              <SelectItem value="Kebersihan">Kebersihan</SelectItem>
-              <SelectItem value="Elektronik">Elektronik</SelectItem>
-              <SelectItem value="Pakaian">Pakaian</SelectItem>
-              <SelectItem value="Alat Tulis">Alat Tulis</SelectItem>
-              <SelectItem value="Lainnya">Lainnya</SelectItem>
+              {categories.length > 0 ? (
+                categories.map((category) => (
+                  <SelectItem key={category.id} value={category.name}>
+                    {category.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="" disabled>
+                  Belum ada kategori - Buat kategori di tab Master Kategori
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
+          {categories.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              Belum ada kategori tersedia. Silakan buat kategori terlebih dahulu di tab "Master Kategori".
+            </p>
+          )}
         </div>
       </div>
       
@@ -463,6 +479,7 @@ const Admin = () => {
       <Tabs defaultValue="products" className="space-y-6">
         <TabsList>
           <TabsTrigger value="products">Manajemen Produk</TabsTrigger>
+          <TabsTrigger value="categories">Master Kategori</TabsTrigger>
           <TabsTrigger value="transactions">Riwayat Transaksi</TabsTrigger>
         </TabsList>
 
@@ -529,6 +546,10 @@ const Admin = () => {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="categories">
+          <CategoryManager />
         </TabsContent>
 
         <TabsContent value="transactions">
