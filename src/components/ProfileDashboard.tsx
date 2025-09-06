@@ -170,13 +170,13 @@ export const ProfileDashboard: React.FC = () => {
           show_phone: data.show_phone ?? true,
           show_email: data.show_email || false,
           show_tax_number: data.show_tax_number || false,
-          paper_size: data.paper_size || 'thermal_80',
-          font_size: data.font_size || 'medium',
+          paper_size: (data.paper_size as 'thermal_58' | 'thermal_80' | 'a4') || 'thermal_80',
+          font_size: (data.font_size as 'small' | 'medium' | 'large') || 'medium',
           show_qr_code: data.show_qr_code || false,
           currency_symbol: data.currency_symbol || 'Rp',
           show_tax: data.show_tax || false,
           tax_rate: data.tax_rate || 11.0,
-          tax_type: data.tax_type || 'percentage'
+          tax_type: (data.tax_type as 'percentage' | 'fixed') || 'percentage'
         });
       }
     } catch (error) {

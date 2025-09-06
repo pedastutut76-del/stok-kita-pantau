@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ProductSelector } from "@/components/ProductSelector";
 import { Cart } from "@/components/Cart";  
 import { CheckoutDialog } from "@/components/CheckoutDialog";
@@ -10,6 +10,7 @@ import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Package } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CartItem {
   product: Product;
@@ -28,6 +29,30 @@ const Cashier = () => {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<any>(null);
+  const [storeName, setStoreName] = useState<string>("");
+
+  useEffect(() => {
+    loadStoreName();
+  }, [user]);
+
+  const loadStoreName = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('store_name, business_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (data) {
+        setStoreName(data.store_name || data.business_name || "Toko");
+      }
+    } catch (error) {
+      console.error('Error loading store name:', error);
+      setStoreName("Toko");
+    }
+  };
 
   const addToCart = (product: Product, quantity: number) => {
     // Check if product has enough stock
@@ -135,7 +160,7 @@ const Cashier = () => {
         payment_method: transactionData.paymentMethod,
         cash_received: transactionData.cashReceived,
         change: transactionData.change,
-        cashier_name: transactionData.customerName || "Kasir",
+        cashier_name: storeName || "Toko",
       };
 
       // Save transaction to database
@@ -161,7 +186,7 @@ const Cashier = () => {
         cashReceived: transactionData.cashReceived,
         change: transactionData.change,
         timestamp: new Date().toISOString(),
-        cashierName: transactionData.customerName || "Kasir",
+        cashierName: storeName || "Toko",
         receiptNumber: transaction.receipt_number,
       };
 
@@ -249,7 +274,7 @@ const Cashier = () => {
 =================================
 No. Struk: ${lastTransaction.receiptNumber}
 Tanggal: ${new Date(lastTransaction.timestamp).toLocaleString('id-ID')}
-Kasir: ${lastTransaction.cashierName}
+Toko: ${lastTransaction.cashierName}
 
 =================================
           DAFTAR BELANJA          
