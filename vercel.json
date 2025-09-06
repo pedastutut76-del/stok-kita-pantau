@@ -3,11 +3,7 @@
   "outputDirectory": "dist",
   "installCommand": "npm ci --legacy-peer-deps",
   "framework": "vite",
-  "functions": {
-    "app/api/**/*.js": {
-      "maxDuration": 10
-    }
-  },
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
       "source": "/(.*)",
