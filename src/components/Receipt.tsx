@@ -1,9 +1,10 @@
 import { Transaction } from "@/types/sales";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Printer, Download } from "lucide-react";
+import { Printer, Download, Settings } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { ReceiptPreview } from "./ReceiptPreview";
+import { ThermalPrintDialog } from "./ThermalPrintDialog";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
@@ -113,15 +114,23 @@ export const Receipt = ({ transaction, onPrint, onDownload }: ReceiptProps) => {
   return (
     <Card className="max-w-sm mx-auto bg-white border-2 shadow-strong">
       <CardHeader className="text-center pb-2">
-        <div className="flex justify-center space-x-2 mb-4">
-          <Button onClick={printReceipt} variant="outline" size="sm">
-            <Printer className="h-4 w-4 mr-2" />
-            Cetak
-          </Button>
+        <div className="flex flex-col space-y-2 mb-4">
+          <div className="flex justify-center space-x-2">
+            <ThermalPrintDialog transaction={transaction}>
+              <Button variant="default" size="sm" className="flex-1">
+                <Printer className="h-4 w-4 mr-2" />
+                Cetak Thermal
+              </Button>
+            </ThermalPrintDialog>
+            <Button onClick={printReceipt} variant="outline" size="sm" className="flex-1">
+              <Settings className="h-4 w-4 mr-2" />
+              Cetak Biasa
+            </Button>
+          </div>
           {onDownload && (
-            <Button onClick={onDownload} variant="outline" size="sm">
+            <Button onClick={onDownload} variant="secondary" size="sm" className="w-full">
               <Download className="h-4 w-4 mr-2" />
-              Download
+              Download PDF
             </Button>
           )}
         </div>
@@ -171,15 +180,21 @@ export const Receipt = ({ transaction, onPrint, onDownload }: ReceiptProps) => {
 
           {/* Items */}
           <div className="border-t border-dashed border-gray-400 pt-2">
-            {transaction.items.map((item, index) => (
-              <div key={index} className="mb-3">
-                <div className="font-medium">{item.product.name}</div>
-                <div className="flex justify-between text-xs">
-                  <span>{item.quantity} x {formatCurrency(item.product.price)}</span>
-                  <span className="font-medium">{formatCurrency(item.subtotal)}</span>
+            <div className="bg-gray-50 rounded-lg p-3 space-y-3">
+              {transaction.items.map((item, index) => (
+                <div key={index} className="flex justify-between items-start">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-gray-900 truncate">{item.product.name}</div>
+                    <div className="text-xs text-gray-600">
+                      {item.quantity} x {formatCurrency(item.product.price)}
+                    </div>
+                  </div>
+                  <div className="ml-3 text-right">
+                    <div className="font-bold text-gray-900">{formatCurrency(item.subtotal)}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           {/* Totals */}
@@ -203,23 +218,34 @@ export const Receipt = ({ transaction, onPrint, onDownload }: ReceiptProps) => {
           </div>
 
           {/* Payment */}
-          <div className="border-t border-dashed border-gray-400 pt-2 space-y-1">
-            <div className="flex justify-between">
-              <span>Pembayaran:</span>
-              <span className="uppercase">{transaction.paymentMethod}</span>
+          <div className="border-t border-dashed border-gray-400 pt-2 space-y-2">
+            <div className="bg-gray-50 p-3 rounded-lg space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-600">Metode Pembayaran:</span>
+                <span className="uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded text-sm">
+                  {transaction.paymentMethod}
+                </span>
+              </div>
+              
+              {transaction.cashReceived && (
+                <div className="space-y-1 pt-2 border-t border-gray-200">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Uang Tunai:</span>
+                    <span className="font-medium">{formatCurrency(transaction.cashReceived)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold text-green-600">
+                    <span>Kembalian:</span>
+                    <span>{formatCurrency(transaction.change || 0)}</span>
+                  </div>
+                </div>
+              )}
+              
+              {transaction.paymentMethod.toLowerCase() !== 'tunai' && (
+                <div className="text-center text-xs text-gray-500 mt-2">
+                  ✓ Pembayaran berhasil diproses
+                </div>
+              )}
             </div>
-            {transaction.cashReceived && (
-              <>
-                <div className="flex justify-between">
-                  <span>Uang Tunai:</span>
-                  <span>{formatCurrency(transaction.cashReceived)}</span>
-                </div>
-                <div className="flex justify-between font-medium">
-                  <span>Kembalian:</span>
-                  <span>{formatCurrency(transaction.change || 0)}</span>
-                </div>
-              </>
-            )}
           </div>
 
           {/* Footer */}
