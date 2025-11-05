@@ -31,7 +31,7 @@ export const ProductSelector = ({ products, onAddToCart }: ProductSelectorProps)
         <CardTitle>Pilih Produk</CardTitle>
         <CardDescription>Pilih produk untuk ditambahkan ke keranjang</CardDescription>
         
-        <div className="flex gap-4 mt-4">
+        <div className="flex flex-col md:flex-row gap-4 mt-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
@@ -44,7 +44,7 @@ export const ProductSelector = ({ products, onAddToCart }: ProductSelectorProps)
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-3 py-2 border rounded-md"
+            className="px-3 py-2 border rounded-md w-full md:w-56"
           >
             {categories.map(cat => (
               <option key={cat} value={cat}>

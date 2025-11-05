@@ -33,10 +33,10 @@ export const Layout = ({ children }: LayoutProps) => {
       {/* Main Content */}
       <main className={cn(
         "transition-all duration-300 ease-in-out min-h-screen",
-        sidebarCollapsed ? "ml-16" : "ml-64"
+        sidebarCollapsed ? "ml-0 md:ml-16" : "ml-0 md:ml-64"
       )}>
         {/* Content Area */}
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {children}
         </div>
       </main>

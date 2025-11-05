@@ -53,7 +53,7 @@ export const Cart = ({ items, onUpdateQuantity, onRemoveItem, onCheckout }: Cart
                     </p>
                   </div>
                   
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 flex-wrap justify-end">
                     <Button
                       variant="outline"
                       size="sm"
@@ -66,7 +66,7 @@ export const Cart = ({ items, onUpdateQuantity, onRemoveItem, onCheckout }: Cart
                       type="number"
                       value={item.quantity}
                       onChange={(e) => onUpdateQuantity(item.product.id, parseInt(e.target.value) || 0)}
-                      className="w-16 text-center"
+                      className="w-14 md:w-16 text-center"
                       min="0"
                     />
                     

@@ -10,12 +10,12 @@ import { id } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
 import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 import { useState, useEffect } from "react";
+import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ReceiptProps {
   transaction: Transaction;
   onPrint?: () => void;
-  onDownload?: () => void;
 }
 
 interface UserProfile {
@@ -28,7 +28,7 @@ interface UserProfile {
   full_name?: string;
 }
 
-export const Receipt = ({ transaction, onPrint, onDownload }: ReceiptProps) => {
+export const Receipt = ({ transaction, onPrint }: ReceiptProps) => {
   const { user } = useAuth();
   const { settings } = useReceiptSettings();
   const [userProfile, setUserProfile] = useState<UserProfile>({});
@@ -61,6 +61,24 @@ export const Receipt = ({ transaction, onPrint, onDownload }: ReceiptProps) => {
     } catch (error) {
       console.error('Error loading user profile:', error);
     }
+  };
+
+  const downloadAsPDF = async () => {
+    const content = document.getElementById('receipt-content');
+    if (!content) return;
+    // Use current DOM to ensure the PDF matches the on-screen preview
+    const doc = new jsPDF({ unit: 'px', format: 'a4' });
+    await doc.html(content, {
+      margin: [20, 20, 20, 20],
+      autoPaging: 'text',
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+      },
+      callback: (doc) => {
+        doc.save(`struk-${transaction.receiptNumber}.pdf`);
+      },
+    });
   };
 
   const getFontSizeStyle = () => {
@@ -127,12 +145,10 @@ export const Receipt = ({ transaction, onPrint, onDownload }: ReceiptProps) => {
               Cetak Biasa
             </Button>
           </div>
-          {onDownload && (
-            <Button onClick={onDownload} variant="secondary" size="sm" className="w-full">
-              <Download className="h-4 w-4 mr-2" />
-              Download PDF
-            </Button>
-          )}
+          <Button onClick={downloadAsPDF} variant="secondary" size="sm" className="w-full">
+            <Download className="h-4 w-4 mr-2" />
+            Download PDF
+          </Button>
         </div>
       </CardHeader>
 

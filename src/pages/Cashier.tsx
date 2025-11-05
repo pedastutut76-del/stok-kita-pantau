@@ -222,13 +222,13 @@ const Cashier = () => {
   return (
     <div className="container mx-auto p-4 space-y-6">
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
           Kasir Point of Sale
         </h1>
         <p className="text-muted-foreground">Sistem kasir terintegrasi dengan manajemen stok</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[600px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:min-h-[600px]">
         {/* Product Selection */}
         <div className="lg:col-span-2">
           <ProductSelector 
@@ -266,48 +266,6 @@ const Cashier = () => {
             <Receipt 
               transaction={lastTransaction}
               onPrint={() => window.print()}
-              onDownload={() => {
-                // Create a simple text receipt for download
-                const receiptText = `
-=================================
-        STRUK PEMBAYARAN
-=================================
-No. Struk: ${lastTransaction.receiptNumber}
-Tanggal: ${new Date(lastTransaction.timestamp).toLocaleString('id-ID')}
-Toko: ${lastTransaction.cashierName}
-
-=================================
-          DAFTAR BELANJA          
-=================================
-${lastTransaction.items.map((item: any) => 
-  `${item.product.name}\n${item.quantity} x ${new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(item.product.price)} = ${new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(item.subtotal)}`
-).join('\n\n')}
-
-=================================
-Total: ${new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(lastTransaction.total)}
-Pajak: ${new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(lastTransaction.tax)}
-GRAND TOTAL: ${new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(lastTransaction.grandTotal)}
-
-Pembayaran: ${lastTransaction.paymentMethod}
-${lastTransaction.cashReceived ? `Tunai: ${new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(lastTransaction.cashReceived)}` : ''}
-${lastTransaction.change ? `Kembalian: ${new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(lastTransaction.change)}` : ''}
-
-=================================
-    Terima kasih atas pembelian
-       Anda di toko kami!
-=================================
-                `;
-                
-                const blob = new Blob([receiptText], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `struk-${lastTransaction.receiptNumber}.txt`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-              }}
             />
           )}
         </DialogContent>

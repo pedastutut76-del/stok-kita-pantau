@@ -62,7 +62,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Modern Hero Section */}
-      <div className="relative h-96 bg-gradient-hero overflow-hidden">
+      <div className="relative h-72 md:h-96 bg-gradient-hero overflow-hidden">
         <img 
           src={heroImage} 
           alt="Modern warehouse interior" 
@@ -80,25 +80,25 @@ const Index = () => {
         {/* Gradient overlay for better text readability */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/10" />
         
-        <div className="relative z-10 container mx-auto px-6 h-full flex items-center">
+        <div className="relative z-10 container mx-auto px-4 md:px-6 h-full flex items-center">
           <div className="text-white max-w-4xl">
             <div className="mb-4 inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium animate-fade-in-up">
               <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
               Sistem Terdepan untuk Manajemen Inventori
             </div>
             
-            <h1 className="text-6xl md:text-8xl font-bold mb-8 bg-gradient-to-r from-white via-white to-white/90 bg-clip-text text-transparent animate-fade-in-up leading-tight">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold mb-6 md:mb-8 bg-gradient-to-r from-white via-white to-white/90 bg-clip-text text-transparent animate-fade-in-up leading-tight">
               Stok Kita Pantau
             </h1>
             
-            <p className="text-xl md:text-2xl opacity-95 font-medium animate-fade-in-up leading-relaxed mb-10 max-w-2xl" style={{ animationDelay: '0.2s' }}>
+            <p className="text-base sm:text-lg md:text-2xl opacity-95 font-medium animate-fade-in-up leading-relaxed mb-8 md:mb-10 max-w-2xl" style={{ animationDelay: '0.2s' }}>
               Revolusi cara Anda mengelola inventori dengan teknologi modern, interface yang intuitif, dan analitik real-time
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
               <button 
                 onClick={() => window.location.href = '/admin'}
-                className="px-8 py-4 bg-white text-primary font-bold rounded-2xl hover:bg-white/95 transition-all duration-300 hover:scale-105 shadow-strong hover:shadow-xl"
+                className="px-6 py-3 md:px-8 md:py-4 bg-white text-primary font-bold rounded-2xl hover:bg-white/95 transition-all duration-300 hover:scale-105 shadow-strong hover:shadow-xl"
               >
                 <span className="flex items-center justify-center">
                   Tampilkan Grafik Stok
@@ -107,7 +107,7 @@ const Index = () => {
               </button>
               <button 
                 onClick={() => window.location.href = '/laporan'}
-                className="px-8 py-4 border-2 border-white/40 text-white font-bold rounded-2xl hover:bg-white/15 transition-all duration-300 hover:scale-105 backdrop-blur-sm"
+                className="px-6 py-3 md:px-8 md:py-4 border-2 border-white/40 text-white font-bold rounded-2xl hover:bg-white/15 transition-all duration-300 hover:scale-105 backdrop-blur-sm"
               >
                 <span className="flex items-center justify-center">
                   Tampilkan Grafik Penjualan
@@ -120,7 +120,7 @@ const Index = () => {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-12 space-y-12">
+      <div className="container mx-auto px-4 py-8 md:py-12 space-y-8 md:space-y-12">
         {/* Stock Summary */}
         <StockSummary 
           totalProducts={stockSummary.total}
