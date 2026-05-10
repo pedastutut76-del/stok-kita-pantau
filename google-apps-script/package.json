@@ -1,0 +1,22 @@
+{
+  "name": "stok-kita-pantau-migration",
+  "version": "1.0.0",
+  "description": "Migration script from Supabase to Google Sheets",
+  "main": "migrate-from-supabase.js",
+  "scripts": {
+    "migrate": "node migrate-from-supabase.js",
+    "export-csv": "node -e \"require('./migrate-from-supabase.js').exportToCSV()\""
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "googleapis": "^128.0.0"
+  },
+  "keywords": [
+    "migration",
+    "supabase",
+    "google-sheets",
+    "database"
+  ],
+  "author": "",
+  "license": "MIT"
+}

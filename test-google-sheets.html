@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Google Sheets API Test</h1>
+    
+    <div class="test-section">
+        <h2>Configuration</h2>
+        <p><strong>Web App URL:</strong> https://script.google.com/macros/s/AKfycbyEXKn93hm-1JU6FzuWWfi5_t8LzRYN1ErsbHA1s8SuZcXs_RygxwnYy6eu5KpvUKJA/exec</p>
+        <p><strong>Status:</strong> <span id="status">Testing...</span></p>
+    </div>
+
+    <div class="test-section">
+        <h2>Test API Connection</h2>
+        <button onclick="testConnection()">Test Connection</button>
+        <div id="connection-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test User Authentication</h2>
+        <input type="email" id="testEmail" placeholder="test@example.com" value="test@example.com">
+        <button onclick="testAuth()">Test Sign In</button>
+        <div id="auth-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Products API</h2>
+        <button onclick="testGetProducts()">Get Products</button>
+        <button onclick="testCreateProduct()">Create Test Product</button>
+        <div id="products-result"></div>
+    </div>
+
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbww5gzGMxl3JcINSzzxO58Cb-_a9lmJXaO3tMpvr71v3U1KNDO94FFHC7C2tw6utkI/exec";
+        let currentUserId = null;
+
+        async function makeRequest(action, method = 'GET', data = null) {
+            const url = new URL(WEB_APP_URL);
+            url.searchParams.append('action', action);
+            if (currentUserId) url.searchParams.append('userId', currentUserId);
+
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            };
+
+            if (data && method === 'POST') {
+                options.body = JSON.stringify(data);
+            }
+
+            try {
+                const response = await fetch(url.toString(), options);
+                const result = await response.json();
+                return { success: true, data: result };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function testConnection() {
+            const resultDiv = document.getElementById('connection-result');
+            resultDiv.innerHTML = '<p>Testing connection...</p>';
+
+            const result = await makeRequest('getProducts');
+            
+            if (result.success) {
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Connection Successful</h3>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                    </div>
+                `;
+                document.getElementById('status').innerHTML = '<span style="color: green;">✅ Connected</span>';
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Connection Failed</h3>
+                        <p><strong>Error:</strong> ${result.error}</p>
+                        <p>This might be due to Google authentication requirements.</p>
+                    </div>
+                `;
+                document.getElementById('status').innerHTML = '<span style="color: red;">❌ Failed</span>';
+            }
+        }
+
+        async function testAuth() {
+            const email = document.getElementById('testEmail').value;
+            const resultDiv = document.getElementById('auth-result');
+            resultDiv.innerHTML = '<p>Testing authentication...</p>';
+
+            const result = await makeRequest('createUser', 'POST', {
+                email: email,
+                full_name: 'Test User'
+            });
+
+            if (result.success && result.data.id) {
+                currentUserId = result.data.id;
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Authentication Successful</h3>
+                        <p><strong>User ID:</strong> ${result.data.id}</p>
+                        <p><strong>Email:</strong> ${email}</p>
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Authentication Failed</h3>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function testGetProducts() {
+            const resultDiv = document.getElementById('products-result');
+            resultDiv.innerHTML = '<p>Getting products...</p>';
+
+            const result = await makeRequest('getProducts');
+
+            if (result.success) {
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Products Retrieved</h3>
+                        <p><strong>Count:</strong> ${Array.isArray(result.data) ? result.data.length : 0}</p>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Failed to Get Products</h3>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function testCreateProduct() {
+            const resultDiv = document.getElementById('products-result');
+            resultDiv.innerHTML = '<p>Creating test product...</p>';
+
+            const testProduct = {
+                name: 'Test Product ' + Date.now(),
+                category: 'Test Category',
+                price: 10000,
+                current_stock: 50,
+                min_stock: 10
+            };
+
+            const result = await makeRequest('createProduct', 'POST', testProduct);
+
+            if (result.success && result.data.id) {
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Product Created</h3>
+                        <p><strong>Product ID:</strong> ${result.data.id}</p>
+                        <p><strong>Name:</strong> ${testProduct.name}</p>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Failed to Create Product</h3>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-test connection on page load
+        window.onload = function() {
+            setTimeout(testConnection, 1000);
+        };
+    </script>
+</body>
+</html>
