@@ -89,19 +89,29 @@ class GoogleSheetsAPI {
 
   async signIn(email: string, password: string): Promise<{ user: User; error: any }> {
     try {
-      // For simplicity, we'll create or get user by email
-      // In production, you'd want proper authentication
+      // For Google Sheets, we'll create or get user by email
+      // Password is ignored for simplicity - in production, implement proper auth
       const response = await this.post('createUser', {
         email,
         full_name: email.split('@')[0]
       });
 
       if (response.id) {
-        const user = await this.getUserByEmail(email);
-        if (user) {
-          this.setCurrentUser(user.id);
-          return { user, error: null };
-        }
+        const user: User = {
+          id: response.id,
+          email: email,
+          full_name: email.split('@')[0],
+          phone: '',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        this.setCurrentUser(user.id);
+        // Save user info to localStorage for persistence
+        localStorage.setItem('userEmail', email);
+        localStorage.setItem('userName', email.split('@')[0]);
+        
+        return { user, error: null };
       }
       
       return { user: null, error: 'Authentication failed' };
@@ -113,6 +123,8 @@ class GoogleSheetsAPI {
   async signOut(): Promise<{ error: any }> {
     this.currentUserId = null;
     localStorage.removeItem('userId');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
     return { error: null };
   }
 

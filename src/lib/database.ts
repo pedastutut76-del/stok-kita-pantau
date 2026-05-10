@@ -202,15 +202,18 @@ class GoogleSheetsService implements DatabaseService {
     const userId = googleSheetsAPI.getCurrentUser();
     if (!userId) return null;
     
-    // This would need to be implemented in Apps Script
-    // For now, return a basic user object
+    // For simplicity, return basic user info from localStorage
+    // In a real implementation, you'd fetch from the database
+    const userEmail = localStorage.getItem('userEmail') || '';
+    const userName = localStorage.getItem('userName') || userEmail.split('@')[0];
+    
     return {
       id: userId,
-      email: '',
-      full_name: '',
+      email: userEmail,
+      full_name: userName,
       phone: '',
-      created_at: '',
-      updated_at: ''
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
   }
 

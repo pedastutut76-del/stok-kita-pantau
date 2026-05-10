@@ -1,59 +1,52 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from "@supabase/supabase-js";
+import { database } from "@/lib/database";
+import { User } from "@/lib/google-sheets-api";
 import { useToast } from "@/hooks/use-toast";
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    // Check for existing session in localStorage
+    const checkExistingSession = async () => {
+      try {
+        const currentUser = await database.getCurrentUser();
+        setUser(currentUser);
+      } catch (error) {
+        console.log('No existing session');
+      } finally {
         setLoading(false);
       }
-    );
+    };
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    checkExistingSession();
   }, []);
 
   const signUp = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const redirectUrl = `${window.location.origin}/`;
       
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl
-        }
-      });
+      // For Google Sheets, we'll create a simple user account
+      // In production, you might want to add proper password handling
+      const { user: newUser, error } = await database.signIn(email, password);
       
       if (error) throw error;
       
-      toast({
-        title: "Berhasil",
-        description: "Akun berhasil dibuat. Silakan cek email untuk verifikasi.",
-      });
+      if (newUser) {
+        setUser(newUser);
+        toast({
+          title: "Berhasil",
+          description: "Akun berhasil dibuat dan Anda sudah masuk.",
+        });
+      }
       
       return { success: true };
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Gagal membuat akun",
         variant: "destructive",
       });
       return { success: false, error };
@@ -65,25 +58,23 @@ export const useAuth = () => {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { user: loggedInUser, error } = await database.signIn(email, password);
       
       if (error) throw error;
       
-      toast({
-        title: "Berhasil",
-        description: "Berhasil masuk ke aplikasi",
-      });
+      if (loggedInUser) {
+        setUser(loggedInUser);
+        toast({
+          title: "Berhasil",
+          description: "Berhasil masuk ke aplikasi",
+        });
+      }
       
       return { success: true };
     } catch (error: any) {
-      let errorMessage = error.message;
-      if (error.message.includes("Invalid login credentials")) {
+      let errorMessage = error.message || "Login gagal";
+      if (errorMessage.includes("Invalid") || errorMessage.includes("gagal")) {
         errorMessage = "Email atau password salah";
-      } else if (error.message.includes("Email not confirmed")) {
-        errorMessage = "Email belum diverifikasi. Silakan cek email Anda.";
       }
       
       toast({
@@ -99,8 +90,10 @@ export const useAuth = () => {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } = await database.signOut();
       if (error) throw error;
+      
+      setUser(null);
       
       toast({
         title: "Berhasil",
@@ -114,34 +107,6 @@ export const useAuth = () => {
       });
     }
   };
-
-  const resetPassword = async (email: string) => {
-    try {
-      setLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`
-      });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Berhasil",
-        description: "Link reset password telah dikirim ke email Anda.",
-      });
-      
-      return { success: true };
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-      return { success: false, error };
-    } finally {
-      setLoading(false);
-    }
-  };
-
 
   const updateProfile = async (profileData: { 
     full_name?: string; 
@@ -167,72 +132,19 @@ export const useAuth = () => {
       console.log('Updating profile for user:', user.id);
       console.log('Profile data:', profileData);
       
-      // First check if profile exists
-      const { data: existingProfile } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
+      // Check if profile exists
+      const { data: existingProfile } = await database.getUserProfile();
+      
       let result;
       if (existingProfile) {
         // Update existing profile
-        result = await supabase
-          .from('user_profiles')
-          .update({
-            full_name: profileData.full_name || null,
-            email: profileData.email || user.email,
-            phone: profileData.phone || null,
-            store_name: profileData.store_name || null,
-            business_name: profileData.business_name || null,
-            business_type: profileData.business_type || 'retail',
-            address: profileData.address || null,
-            city: profileData.city || null,
-            province: profileData.province || null,
-            postal_code: profileData.postal_code || null,
-            country: profileData.country || 'Indonesia',
-            tax_number: profileData.tax_number || null,
-            business_license: profileData.business_license || null,
-            description: profileData.description || null,
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id);
+        result = await database.updateUserProfile(profileData);
       } else {
-        // Insert new profile
-        result = await supabase
-          .from('user_profiles')
-          .insert({
-            user_id: user.id,
-            full_name: profileData.full_name || null,
-            email: profileData.email || user.email,
-            phone: profileData.phone || null,
-            store_name: profileData.store_name || null,
-            business_name: profileData.business_name || null,
-            business_type: profileData.business_type || 'retail',
-            address: profileData.address || null,
-            city: profileData.city || null,
-            province: profileData.province || null,
-            postal_code: profileData.postal_code || null,
-            country: profileData.country || 'Indonesia',
-            tax_number: profileData.tax_number || null,
-            business_license: profileData.business_license || null,
-            description: profileData.description || null
-          });
-      }
-
-      const { error } = result;
-      
-      // If table doesn't exist, show info message
-      if (error && (error.message.includes('relation') || error.message.includes('does not exist'))) {
-        console.log('user_profiles table not found, profile update skipped');
-        toast({
-          title: "Info",
-          description: "Tabel profil belum ada. Jalankan migration database terlebih dahulu.",
-        });
-        return { success: true };
+        // Create new profile
+        result = await database.createUserProfile(profileData);
       }
       
-      if (error) throw error;
+      if (result.error) throw result.error;
       
       toast({
         title: "Berhasil",
@@ -253,45 +165,6 @@ export const useAuth = () => {
     }
   };
 
-  const changePassword = async (currentPassword: string, newPassword: string) => {
-    setLoading(true);
-    try {
-      // First verify the current password by attempting to sign in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user?.email || '',
-        password: currentPassword,
-      });
-
-      if (signInError) {
-        throw new Error('Password lama tidak benar');
-      }
-
-      // If verification successful, update the password
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Berhasil",
-        description: "Password berhasil diubah.",
-      });
-      
-      return { success: true };
-    } catch (error: any) {
-      console.error('Password change error:', error);
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-      return { success: false, error };
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return {
     user,
     loading,
@@ -299,7 +172,5 @@ export const useAuth = () => {
     signIn,
     signOut,
     updateProfile,
-    changePassword,
-    resetPassword,
   };
 };
