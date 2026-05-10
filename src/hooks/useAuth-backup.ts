@@ -1,14 +1,7 @@
 import { useState, useEffect } from "react";
+import { database } from "@/lib/database";
+import { User } from "@/lib/google-sheets-api";
 import { useToast } from "@/hooks/use-toast";
-
-interface User {
-  id: string;
-  email: string;
-  full_name: string;
-  phone: string;
-  created_at: string;
-  updated_at: string;
-}
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -17,22 +10,10 @@ export const useAuth = () => {
 
   useEffect(() => {
     // Check for existing session in localStorage
-    const checkExistingSession = () => {
+    const checkExistingSession = async () => {
       try {
-        const userId = localStorage.getItem('userId');
-        const userEmail = localStorage.getItem('userEmail');
-        const userName = localStorage.getItem('userName');
-        
-        if (userId && userEmail) {
-          setUser({
-            id: userId,
-            email: userEmail,
-            full_name: userName || userEmail.split('@')[0],
-            phone: '',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-        }
+        const currentUser = await database.getCurrentUser();
+        setUser(currentUser);
       } catch (error) {
         console.log('No existing session');
       } finally {
@@ -47,27 +28,19 @@ export const useAuth = () => {
     try {
       setLoading(true);
       
-      // Simulate user creation
-      const newUser: User = {
-        id: 'user_' + Date.now(),
-        email: email,
-        full_name: email.split('@')[0],
-        phone: '',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      // For Google Sheets, we'll create a simple user account
+      // In production, you might want to add proper password handling
+      const { user: newUser, error } = await database.signIn(email, password);
       
-      // Save to localStorage
-      localStorage.setItem('userId', newUser.id);
-      localStorage.setItem('userEmail', newUser.email);
-      localStorage.setItem('userName', newUser.full_name);
+      if (error) throw error;
       
-      setUser(newUser);
-      
-      toast({
-        title: "Berhasil",
-        description: "Akun berhasil dibuat dan Anda sudah masuk.",
-      });
+      if (newUser) {
+        setUser(newUser);
+        toast({
+          title: "Berhasil",
+          description: "Akun berhasil dibuat dan Anda sudah masuk.",
+        });
+      }
       
       return { success: true };
     } catch (error: any) {
@@ -85,28 +58,17 @@ export const useAuth = () => {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
+      const { user: loggedInUser, error } = await database.signIn(email, password);
       
-      // Simulate sign in
-      const loggedInUser: User = {
-        id: 'user_' + Date.now(),
-        email: email,
-        full_name: email.split('@')[0],
-        phone: '',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      if (error) throw error;
       
-      // Save to localStorage
-      localStorage.setItem('userId', loggedInUser.id);
-      localStorage.setItem('userEmail', loggedInUser.email);
-      localStorage.setItem('userName', loggedInUser.full_name);
-      
-      setUser(loggedInUser);
-      
-      toast({
-        title: "Berhasil",
-        description: "Berhasil masuk ke aplikasi",
-      });
+      if (loggedInUser) {
+        setUser(loggedInUser);
+        toast({
+          title: "Berhasil",
+          description: "Berhasil masuk ke aplikasi",
+        });
+      }
       
       return { success: true };
     } catch (error: any) {
@@ -128,10 +90,8 @@ export const useAuth = () => {
 
   const signOut = async () => {
     try {
-      // Clear localStorage
-      localStorage.removeItem('userId');
-      localStorage.removeItem('userEmail');
-      localStorage.removeItem('userName');
+      const { error } = await database.signOut();
+      if (error) throw error;
       
       setUser(null);
       
@@ -169,9 +129,22 @@ export const useAuth = () => {
       
       if (!user?.id) throw new Error('User not authenticated');
       
-      // Simulate profile update
       console.log('Updating profile for user:', user.id);
       console.log('Profile data:', profileData);
+      
+      // Check if profile exists
+      const { data: existingProfile } = await database.getUserProfile();
+      
+      let result;
+      if (existingProfile) {
+        // Update existing profile
+        result = await database.updateUserProfile(profileData);
+      } else {
+        // Create new profile
+        result = await database.createUserProfile(profileData);
+      }
+      
+      if (result.error) throw result.error;
       
       toast({
         title: "Berhasil",

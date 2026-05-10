@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { database } from "@/lib/database";
 
 export interface Product {
   id: string;
@@ -34,8 +34,26 @@ export const useProducts = () => {
       
       setLoading(true);
       
-      const data = await database.getProducts();
-      setProducts(data || []);
+      // First try to fetch with user_id filter
+      let { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name');
+
+      // If user_id column doesn't exist, try without filter
+      if (error && error.message.includes('user_id')) {
+        console.log('user_id column not found, fetching all products');
+        const result = await supabase
+          .from('products')
+          .select('*')
+          .order('name');
+        data = result.data;
+        error = result.error;
+      }
+
+      if (error) throw error;
+      setProducts((data as Product[]) || []);
     } catch (error: any) {
       console.error('Product fetch error:', error);
       toast({
@@ -53,14 +71,15 @@ export const useProducts = () => {
     try {
       if (!user?.id) throw new Error('User not authenticated');
       
-      const { data, error } = await database.createProduct({
-        ...productData,
-        user_id: user.id
-      });
+      const { data, error } = await supabase
+        .from('products')
+        .insert([{ ...productData, user_id: user.id }])
+        .select()
+        .single();
 
       if (error) throw error;
 
-      setProducts(prev => [...prev, data!]);
+      setProducts(prev => [...prev, data]);
       toast({
         title: "Berhasil",
         description: "Produk berhasil ditambahkan",
@@ -78,11 +97,16 @@ export const useProducts = () => {
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
-      const { data, error } = await database.updateProduct(id, updates);
+      const { data, error } = await supabase
+        .from('products')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
 
       if (error) throw error;
 
-      setProducts(prev => prev.map(p => p.id === id ? data! : p));
+      setProducts(prev => prev.map(p => p.id === id ? data : p));
       toast({
         title: "Berhasil",
         description: "Produk berhasil diperbarui",
@@ -104,7 +128,10 @@ export const useProducts = () => {
 
   const deleteProduct = async (id: string) => {
     try {
-      const { error } = await database.deleteProduct(id);
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
 
       if (error) throw error;
 

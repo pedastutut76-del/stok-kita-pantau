@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { database } from "@/lib/database";
 
 export interface TransactionItem {
   product_id: string;
@@ -42,7 +42,25 @@ export const useTransactions = () => {
       
       setLoading(true);
       
-      const data = await database.getTransactions();
+      // First try to fetch with user_id filter
+      let { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      // If user_id column doesn't exist, try without filter
+      if (error && error.message.includes('user_id')) {
+        console.log('user_id column not found, fetching all transactions');
+        const result = await supabase
+          .from('transactions')
+          .select('*')
+          .order('created_at', { ascending: false });
+        data = result.data;
+        error = result.error;
+      }
+
+      if (error) throw error;
       
       // Transform the data to match our interface
       const transformedData = (data || []).map(transaction => ({
@@ -68,17 +86,21 @@ export const useTransactions = () => {
     try {
       if (!user?.id) throw new Error('User not authenticated');
       
-      const { data, error } = await database.createTransaction({
-        ...transactionData,
-        user_id: user.id,
-        items: transactionData.items as any, // Cast to any for JSON
-      });
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert([{
+          ...transactionData,
+          user_id: user.id,
+          items: transactionData.items as any, // Cast to any for JSONB
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
 
       const transformedData = {
-        ...data!,
-        items: data!.items as unknown as TransactionItem[],
+        ...data,
+        items: data.items as unknown as TransactionItem[],
       } as Transaction;
 
       setTransactions(prev => [transformedData, ...prev]);
